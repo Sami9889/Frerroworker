@@ -154,87 +154,12 @@
     font-size:.9rem;
   }
 
-  .review-section { margin-top:24px; }
 
-  .review-form {
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    margin-bottom:22px;
-  }
 
-  .review-form input,
-  .review-form textarea,
-  .review-form select {
-    font-family:inherit;
-    font-size:.95rem;
-    padding:10px 12px;
-    border:1px solid var(--rule);
-    background:transparent;
-    color:var(--ink);
-    outline:none;
-  }
 
-  .review-form textarea { resize:vertical; min-height:80px; }
 
-  .review-form button {
-    align-self:flex-start;
-    padding:10px 16px;
-    border:1px solid var(--rust);
-    background:var(--rust);
-    color:var(--paper);
-    font-family:inherit;
-    font-size:.85rem;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    cursor:pointer;
-  }
 
-  .review-form button:hover { background:#8c3815; border-color:#8c3815; }
 
-  .review {
-    padding:14px 0;
-    border-bottom:1px solid var(--rule);
-  }
-
-  .review:last-child { border-bottom:none; }
-
-  .review-head {
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:6px;
-    font-size:.85rem;
-  }
-
-  .review-head b { font-weight:600; }
-
-  .review-stars { color:var(--rust); }
-
-  .review-body { color:var(--ink-soft); font-size:.92rem; }
-
-  .review-empty { color:var(--ink-soft); font-size:.92rem; }
-
-  .recycle-form {
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-    margin-top:18px;
-    padding-top:18px;
-    border-top:1px solid var(--rule);
-  }
-
-  .recycle-form input,
-  .recycle-form textarea,
-  .recycle-form select {
-    font-family:inherit;
-    font-size:.95rem;
-    padding:10px 12px;
-    border:1px solid var(--rule);
-    background:transparent;
-    color:var(--ink);
-    outline:none;
-  }
 
   .recycle-form textarea { resize:vertical; min-height:90px; }
 
@@ -457,7 +382,7 @@
         </li>
         <li class="recycle-card">
           <div class="li-head"><b>Contact</b></div>
-          <span>Email <a href="mailto:ferroworks@outlook.com.au">ferroworks@outlook.com.au</a> or join the <a href="https://discord.gg/zw9TyNQjJ" target="_blank" rel="noopener">Discord</a>. Please include photos and a short description of the printer.</span>
+          <span>Email <a href="mailto:ferroworks@outlook.com.au">ferroworks@outlook.com.au</a>. Please include photos and a short description of the printer.</span>
         </li>
       </ul>
 
@@ -476,26 +401,6 @@
         <div class="recycle-confirm" id="recycle-confirm" style="display:none;">Request received. We will reply with next steps.</div>
       </form>
 
-      <div class="review-section">
-        <div class="sec-num">06</div>
-        <h2>Printer Donation Reviews</h2>
-        <p class="review-empty" id="review-empty-msg">No reviews yet. Be the first to share your experience.</p>
-        <div id="reviews-list"></div>
-
-        <form class="review-form" id="review-form">
-          <input type="text" id="review-name" placeholder="Your name" required>
-          <select id="review-rating" required>
-            <option value="" disabled selected>Rating</option>
-            <option value="5">5 - Excellent</option>
-            <option value="4">4 - Good</option>
-            <option value="3">3 - Okay</option>
-            <option value="2">2 - Poor</option>
-            <option value="1">1 - Terrible</option>
-          </select>
-          <textarea id="review-message" placeholder="Share your experience donating a printer." required></textarea>
-          <button type="submit">Submit Review</button>
-        </form>
-      </div>
     </section>
   </main>
 
@@ -503,8 +408,6 @@
     <div>FERROWORKER · GPL-3.0 License · made by Riley Wood &amp; sami</div>
     <div>
       <a href="https://github.com/printingstupidity313/FERROWORKER" target="_blank" rel="noopener">GitHub ↗</a>
-      <span style="color:var(--rule);margin:0 8px;">|</span>
-      <a href="https://discord.gg/zw9TyNQjJ" target="_blank" rel="noopener">Discord ↗</a>
     </div>
   </footer>
 </div>
@@ -521,75 +424,6 @@
   });
 
   (function () {
-    var reviewsKey = 'ferroworker_recycle_reviews';
-    var form = document.getElementById('review-form');
-    var list = document.getElementById('reviews-list');
-    var emptyMsg = document.getElementById('review-empty-msg');
-
-    function getReviews() {
-      try { return JSON.parse(localStorage.getItem(reviewsKey)) || []; }
-      catch (e) { return []; }
-    }
-
-    function saveReviews(reviews) {
-      localStorage.setItem(reviewsKey, JSON.stringify(reviews));
-    }
-
-    function starsHtml(rating) {
-      return '★'.repeat(rating) + '☆'.repeat(5 - rating);
-    }
-
-    function render() {
-      var reviews = getReviews();
-      if (!list) return;
-      list.innerHTML = '';
-
-      if (reviews.length === 0 && emptyMsg) {
-        emptyMsg.style.display = 'block';
-      } else if (emptyMsg) {
-        emptyMsg.style.display = 'none';
-      }
-
-      reviews.slice().reverse().forEach(function (review) {
-        var item = document.createElement('div');
-        item.className = 'review';
-        item.innerHTML = '<div class="review-head"><div><b>' + escapeHtml(review.name) + '</b></div><div class="review-stars">' + starsHtml(review.rating) + '</div></div>' +
-          '<div class="review-body">' + escapeHtml(review.message) + '</div>';
-        list.appendChild(item);
-      });
-    }
-
-    function escapeHtml(text) {
-      return String(text).replace(/[&<>"']/g, function (m) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-      });
-    }
-
-    if (form) {
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        var nameInput = document.getElementById('review-name');
-        var ratingInput = document.getElementById('review-rating');
-        var messageInput = document.getElementById('review-message');
-
-        var name = nameInput ? nameInput.value.trim() : '';
-        var rating = ratingInput ? parseInt(ratingInput.value, 10) : 0;
-        var message = messageInput ? messageInput.value.trim() : '';
-
-        if (!name || !rating || !message) return;
-
-        var reviews = getReviews();
-        reviews.push({ name: name, rating: rating, message: message, created: Date.now() });
-        saveReviews(reviews);
-
-        if (nameInput) nameInput.value = '';
-        if (ratingInput) ratingInput.value = '';
-        if (messageInput) messageInput.value = '';
-
-        render();
-      });
-    }
-
     var recycleForm = document.getElementById('recycle-form');
     var recycleConfirm = document.getElementById('recycle-confirm');
 
@@ -619,8 +453,6 @@
         recycleForm.reset();
       });
     }
-
-    render();
   })();
 </script>
 </body>
