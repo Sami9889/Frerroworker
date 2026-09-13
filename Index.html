@@ -154,12 +154,26 @@
     font-size:.9rem;
   }
 
+  .recycle-form {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid var(--rule);
+  }
 
-
-
-
-
-
+  .recycle-form input,
+  .recycle-form textarea,
+  .recycle-form select {
+    font-family:inherit;
+    font-size:.95rem;
+    padding:10px 12px;
+    border:1px solid var(--rule);
+    background:transparent;
+    color:var(--ink);
+    outline:none;
+  }
 
   .recycle-form textarea { resize:vertical; min-height:90px; }
 
