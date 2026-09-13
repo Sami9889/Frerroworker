@@ -93,6 +93,42 @@
   nav.toc a:hover { color:var(--rust); }
   nav.toc { animation: text-in .55s .22s ease both; }
 
+  .donate-iframe-wrap {
+    position:relative;
+    width:100%;
+    padding-bottom:120%;
+    height:0;
+    overflow:hidden;
+    border:1px solid var(--rule);
+    margin-top:18px;
+  }
+
+  .donate-iframe-wrap iframe {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    border:0;
+  }
+
+  .recycle-card {
+    padding:18px 0;
+    border-bottom:1px solid var(--rule);
+  }
+
+  .recycle-card:last-child { border-bottom:none; }
+
+  .recycle-card b { font-weight:600; }
+
+  .recycle-note {
+    margin-top:18px;
+    padding-left:16px;
+    border-left:2px solid var(--rust);
+    color:var(--ink-soft);
+    font-size:.9rem;
+  }
+
   section {
     margin-bottom:56px;
     animation: section-in .45s ease both;
@@ -100,6 +136,8 @@
 
   section:nth-of-type(2) { animation-delay:.06s; }
   section:nth-of-type(3) { animation-delay:.12s; }
+  section:nth-of-type(4) { animation-delay:.18s; }
+  section:nth-of-type(5) { animation-delay:.24s; }
 
   .sec-num {
     margin-bottom:6px;
@@ -226,6 +264,8 @@
     <a href="#about">About</a>
     <a href="#features">Features</a>
     <a href="#bom">Cost &amp; BOM</a>
+    <a href="#donate">Donate</a>
+    <a href="#recycle">Recycle</a>
   </nav>
 
   <main>
@@ -255,12 +295,46 @@
         <b>BOM Status:</b> I am still adding things to the README, BOM, and the 3D models. This is not even close to finished, this is just the start of this project.
       </div>
     </section>
+
+    <section id="donate">
+      <div class="sec-num">04</div>
+      <h2>Support the Project</h2>
+      <p>If you want to help us build FERROWORKER, you can donate through Hack Club Bank. Every dollar goes toward parts, materials, and making the guide free for everyone.</p>
+      <div class="donate-iframe-wrap">
+        <iframe src="https://hcb.hackclub.com/donations/start/ferroworker" title="Donate to FERROWORKER" allowpaymentrequest></iframe>
+      </div>
+      <div class="recycle-note">
+        <b>Note:</b> Replace <code>ferroworker</code> in the iframe URL with your actual HCB organization slug if it is different.
+      </div>
+    </section>
+
+    <section id="recycle">
+      <div class="sec-num">05</div>
+      <h2>Recycle Your 3D Printer</h2>
+      <p>Have an old, broken, or unused 3D printer? We will take it, harvest the good parts, and put them toward future FERROWORKER builds. This keeps e-waste out of landfill and lowers the cost of open-source 3D printing for everyone.</p>
+      <ul class="plain">
+        <li class="recycle-card">
+          <div class="li-head"><b>What we accept</b></div>
+          <span>FDM printers, extruders, hotends, stepper motors, rods, bearings, belts, and electronics. Broken or incomplete is fine.</span>
+        </li>
+        <li class="recycle-card">
+          <div class="li-head"><b>What we cannot accept</b></div>
+          <span>Resin vats, IPA-contaminated parts, or machines soaked in hazardous chemicals.</span>
+        </li>
+        <li class="recycle-card">
+          <div class="li-head"><b>How to donate</b></div>
+          <span>Email <a href="mailto:raw20901@hotmail.com">raw20901@hotmail.com</a> with photos and a short description. We will reply with a shipping label or a drop-off arrangement.</span>
+        </li>
+      </ul>
+    </section>
   </main>
 
   <footer>
     <div>FERROWORKER · GPL-3.0 License · made by Riley Wood &amp; sami</div>
     <div>
       <a href="https://github.com/printingstupidity313/FERROWORKER" target="_blank" rel="noopener">GitHub ↗</a>
+      <span style="color:var(--rule);margin:0 8px;">|</span>
+      <a href="https://discord.gg/zw9TyNQjJ" target="_blank" rel="noopener">Discord ↗</a>
     </div>
   </footer>
 </div>
