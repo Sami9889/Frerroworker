@@ -93,49 +93,6 @@
   nav.toc a:hover { color:var(--rust); }
   nav.toc { animation: text-in .55s .22s ease both; }
 
-  .donate-iframe-wrap {
-    position:relative;
-    width:100%;
-    padding-bottom:120%;
-    height:0;
-    overflow:hidden;
-    border:1px solid var(--rule);
-    margin-top:18px;
-  }
-
-  .donate-iframe-wrap iframe {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    border:0;
-  }
-
-  .donate-app-cta {
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    margin-top:18px;
-    padding:12px 18px;
-    border:1px solid var(--rust);
-    background:var(--rust);
-    color:var(--paper);
-    font-family:inherit;
-    font-size:.9rem;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    text-decoration:none;
-    cursor:pointer;
-  }
-
-  .donate-app-cta:hover { background:#8c3815; border-color:#8c3815; text-decoration:none; }
-
-  .donate-app-note {
-    margin-top:14px;
-    color:var(--ink-soft);
-    font-size:.9rem;
-  }
 
   .recycle-card {
     padding:18px 0;
@@ -206,7 +163,6 @@
   section:nth-of-type(2) { animation-delay:.06s; }
   section:nth-of-type(3) { animation-delay:.12s; }
   section:nth-of-type(4) { animation-delay:.18s; }
-  section:nth-of-type(5) { animation-delay:.24s; }
 
   .sec-num {
     margin-bottom:6px;
@@ -333,7 +289,6 @@
     <a href="#about">About</a>
     <a href="#features">Features</a>
     <a href="#bom">Cost &amp; BOM</a>
-    <a href="#donate">Donate</a>
     <a href="#recycle">Recycle</a>
   </nav>
 
@@ -365,16 +320,8 @@
       </div>
     </section>
 
-    <section id="donate">
-      <div class="sec-num">04</div>
-      <h2>Support the Project</h2>
-      <p>If you want to help us build FERROWORKER, you can donate through Hack Club Bank. Every dollar goes toward parts, materials, and making the guide free for everyone.</p>
-      <a class="donate-app-cta" href="https://hcb.hackclub.com/donations/start/ferroworks" target="_blank" rel="noopener">Donate in the HCB app</a>
-      <p class="donate-app-note">This opens the official Hack Club Bank checkout. You will leave this site to complete your donation.</p>
-    </section>
-
     <section id="recycle">
-      <div class="sec-num">05</div>
+      <div class="sec-num">04</div>
       <h2>Recycle Your 3D Printer</h2>
       <p>Have an old, broken, or unused 3D printer? We will take it, harvest the good parts, and put them toward future FERROWORKER builds. This keeps e-waste out of landfill and lowers the cost of open-source 3D printing for everyone.</p>
       <ul class="plain">
