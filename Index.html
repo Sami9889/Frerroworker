@@ -3,420 +3,477 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>FERROWORKER</title>
-<meta name="description" content="FERROWORKER is a 1m x 1m x 1m build size 3D printer and tool changer.">
-
+<title>FERROWORKER Slicer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-<style>
-  :root {
-    --paper:#f3efe6;
-    --ink:#1c1a17;
-    --ink-soft:#5c574d;
-    --rule:#d8d1c1;
-    --rust:#b5451b;
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
   }
-
-  * { box-sizing:border-box; }
-
-  html { scroll-behavior:smooth; }
-
-  body {
-    margin:0;
-    padding:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'IBM Plex Mono', monospace;
-    font-size:16px;
-    line-height:1.65;
-  }
-
-  ::selection { background:var(--rust); color:var(--paper); }
-  a { color:var(--rust); }
-  a:hover { text-decoration:none; }
-
-  .wrap {
-    max-width:680px;
-    margin:0 auto;
-    padding:64px 24px 40px;
-    animation: arrive .55s ease both;
-  }
-
-  header.page-head { margin-bottom:56px; }
-
-  .kicker {
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-bottom:14px;
-    color:var(--ink-soft);
-    font-size:.75rem;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-  }
-
-  h1 {
-    margin:0 0 10px;
-    color:var(--ink);
-    font-family:'Fraunces', serif;
-    font-size:2.6rem;
-    font-weight:600;
-    line-height:1.05;
-    animation: title-in .65s ease both;
-  }
-
-  .tagline {
-    max-width:52ch;
-    margin-bottom:22px;
-    color:var(--ink-soft);
-    font-size:1rem;
-    animation: text-in .55s .14s ease both;
-  }
-
-  nav.toc {
-    display:flex;
-    flex-wrap:wrap;
-    gap:2px 18px;
-    margin-bottom:56px;
-    padding:14px 0;
-    border-top:1px solid var(--rule);
-    border-bottom:1px solid var(--rule);
-    font-size:.75rem;
-    letter-spacing:.04em;
-  }
-
-  nav.toc a { color:var(--ink-soft); text-decoration:none; }
-  nav.toc a:hover { color:var(--rust); }
-  nav.toc { animation: text-in .55s .22s ease both; }
-
-
-  .recycle-card {
-    padding:18px 0;
-    border-bottom:1px solid var(--rule);
-  }
-
-  .recycle-card:last-child { border-bottom:none; }
-
-  .recycle-card b { font-weight:600; }
-
-  .recycle-note {
-    margin-top:18px;
-    padding-left:16px;
-    border-left:2px solid var(--rust);
-    color:var(--ink-soft);
-    font-size:.9rem;
-  }
-
-  .recycle-form {
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-    margin-top:18px;
-    padding-top:18px;
-    border-top:1px solid var(--rule);
-  }
-
-  .recycle-form input,
-  .recycle-form textarea,
-  .recycle-form select {
-    font-family:inherit;
-    font-size:.95rem;
-    padding:10px 12px;
-    border:1px solid var(--rule);
-    background:transparent;
-    color:var(--ink);
-    outline:none;
-  }
-
-  .recycle-form textarea { resize:vertical; min-height:90px; }
-
-  .recycle-form button {
-    align-self:flex-start;
-    padding:10px 16px;
-    border:1px solid var(--rust);
-    background:var(--rust);
-    color:var(--paper);
-    font-family:inherit;
-    font-size:.85rem;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    cursor:pointer;
-  }
-
-  .recycle-form button:hover { background:#8c3815; border-color:#8c3815; }
-
-  .recycle-confirm {
-    margin-top:12px;
-    color:var(--ink-soft);
-    font-size:.92rem;
-  }
-
-  section {
-    margin-bottom:56px;
-    animation: section-in .45s ease both;
-  }
-
-  section:nth-of-type(2) { animation-delay:.06s; }
-  section:nth-of-type(3) { animation-delay:.12s; }
-  section:nth-of-type(4) { animation-delay:.18s; }
-
-  .sec-num {
-    margin-bottom:6px;
-    color:var(--rust);
-    font-size:.75rem;
-    letter-spacing:.08em;
-  }
-
-  h2 {
-    margin:0 0 18px;
-    font-family:'Fraunces', serif;
-    font-size:1.5rem;
-    font-weight:600;
-  }
-
-  p { max-width:64ch; margin:0 0 14px; }
-
-  ul.plain {
-    margin:0;
-    padding-left:0;
-    list-style:none;
-  }
-
-  ul.plain li {
-    padding:14px 0;
-    border-bottom:1px solid var(--rule);
-    transition:color .2s ease, padding-left .2s ease;
-  }
-
-  ul.plain li:hover {
-    padding-left:6px;
-    color:var(--rust);
-  }
-
-  ul.plain li:first-child { padding-top:0; }
-  .li-head { display:flex; justify-content:space-between; gap:12px; margin-bottom:4px; }
-  .li-head b { font-weight:600; }
-
-  .bom-note {
-    margin-top:18px;
-    padding-left:16px;
-    border-left:2px solid var(--rust);
-    color:var(--ink-soft);
-    font-size:.9rem;
-  }
-
-  .cost {
-    margin-bottom:6px;
-    font-family:'Fraunces', serif;
-    font-size:2.2rem;
-    font-weight:600;
-  }
-
-  .cost sup {
-    margin-right:4px;
-    color:var(--ink-soft);
-    font-family:'IBM Plex Mono', monospace;
-    font-size:1rem;
-  }
-
-  footer {
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:20px;
-    padding-top:20px;
-    border-top:1px solid var(--rule);
-    color:var(--ink-soft);
-    font-size:.78rem;
-  }
-
-  footer a { color:var(--ink-soft); }
-  footer a:hover { color:var(--rust); }
-
-  @keyframes arrive {
-    from { opacity:0; }
-    to { opacity:1; }
-  }
-
-  @keyframes section-in {
-    from { opacity:0; }
-    to { opacity:1; }
-  }
-
-  @keyframes title-in {
-    from { opacity:0; transform:translateY(6px); }
-    to { opacity:1; transform:translateY(0); }
-  }
-
-  @keyframes text-in {
-    from { opacity:0; }
-    to { opacity:1; }
-  }
-
-  @media (prefers-reduced-motion:reduce) {
-    *, *::before, *::after {
-      animation:none !important;
-      transition:none !important;
-    }
-  }
-
-  @media (max-width:520px) {
-    .wrap { padding-top:38px; }
-    .kicker { display:block; }
-    .kicker span { display:block; margin-bottom:4px; }
-    footer { display:block; }
-    footer div + div { margin-top:10px; }
-  }
-</style>
+}
+</script>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="app">
+  <!-- Top Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-logo">FERROWORKER</div>
+    <button class="menu-item" data-action="file">File</button>
+    <button class="menu-item" data-action="edit">Edit</button>
+    <button class="menu-item" data-action="view">View</button>
+    <button class="menu-item" data-action="help">Help</button>
+    <div class="menu-spacer"></div>
+    <span class="menu-mode fdm" id="modeBadge">3D PRINT</span>
+  </div>
 
-<div class="wrap">
-  <header class="page-head">
-    <div class="kicker">
-      <span>made by Riley Wood &amp; sami</span>
-    </div>
-    <h1>FERROWORKER</h1>
-    <p class="tagline">A 1m x 1m x 1m build size 3D printer that can be assembled in 5 days.</p>
-  </header>
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Left Sidebar -->
+    <div class="sidebar" style="width:300px;min-width:300px">
+      <div class="sidebar-header">Settings</div>
+      <div class="sidebar-scroll">
+        <!-- Models -->
+        <div class="section">
+          <div class="section-title" data-section="models">Models</div>
+          <div class="section-content" id="modelsContent">
+            <div id="modelList" class="model-list hidden"></div>
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <button id="btnAddFiles" class="primary" style="flex:1">+ Add</button>
+              <button id="btnClearAll" class="danger small" style="flex:0 0 50px">Clear</button>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:4px">
+              <button id="btnDuplicate" class="small" style="flex:1">Duplicate</button>
+              <button id="btnArrange" class="small" style="flex:1">Arrange</button>
+            </div>
+            <input type="file" id="fileInput" accept=".stl,.obj,.ply,.3mf" multiple style="display:none">
+            <input type="hidden" id="printSpeed" value="60">
+          </div>
+        </div>
 
-  <nav class="toc" aria-label="Page navigation">
-    <a href="#about">About</a>
-    <a href="#features">Features</a>
-    <a href="#bom">Cost &amp; BOM</a>
-    <a href="#recycle">Recycle</a>
-  </nav>
+        <!-- Mode -->
+        <div class="section">
+          <div class="tabs">
+            <div class="tab active" data-mode="fdm">FDM</div>
+            <div class="tab" data-mode="laser">Laser</div>
+            <div class="tab" data-mode="cnc">CNC</div>
+          </div>
+        </div>
 
-  <main>
-    <section id="about">
-      <div class="sec-num">01</div>
-      <h2>About the Project</h2>
-      <p>The FERROWORKER will be a 1m x 1m x 1m build size 3D printer that can be assembled in 5 days, with the target builder being 14. We will make a full guide to assembly.</p>
-    </section>
+        <!-- Print Settings -->
+        <div class="section" id="printSection">
+          <div class="section-title" data-section="print">Print Settings</div>
+          <div class="section-content" id="printContent">
+            <div class="field-row">
+              <div><label>Layer</label><input type="number" id="layerHeight" value="0.2" step="0.05" min="0.05"></div>
+              <div><label>Width</label><input type="number" id="lineWidth" value="0.4" step="0.05" min="0.1"></div>
+            </div>
+            <div class="field">
+              <label>Infill <span id="infillVal" class="text-accent">20%</span></label>
+              <input type="range" id="infill" min="0" max="100" value="20" step="5">
+            </div>
+            <div class="field">
+              <label>Pattern</label>
+              <select id="infillPattern">
+                <option value="lines">Lines</option>
+                <option value="zigzag">Zigzag</option>
+                <option value="grid">Grid</option>
+                <option value="triangles">Triangles</option>
+                <option value="honeycomb">Honeycomb</option>
+                <option value="cubic">Cubic</option>
+                <option value="octet">Octet</option>
+                <option value="gyroid">Gyroid</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Infill Anchor</label>
+              <select id="infillAnchor">
+                <option value="none">None</option>
+                <option value="perimeter">Perimeter</option>
+                <option value="grid">Grid</option>
+              </select>
+            </div>
 
-    <section id="features">
-      <div class="sec-num">02</div>
-      <h2>Tool Changer</h2>
-      <p>The project will have a tool changer built into one, featuring:</p>
-      <ul class="plain">
-        <li><div class="li-head"><b>3D Printer</b></div></li>
-        <li><div class="li-head"><b>Laser Cutter</b></div></li>
-        <li><div class="li-head"><b>CNC Drill</b></div></li>
-      </ul>
-    </section>
+            <!-- Speeds -->
+            <div class="field-group">
+              <div class="field-group-title">Speeds (mm/s)</div>
+              <div class="field-row">
+                <div><label>Outer Wall</label><input type="number" id="speedOuter" value="30" step="5" min="5"></div>
+                <div><label>Inner Wall</label><input type="number" id="speedInner" value="50" step="5" min="5"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Infill</label><input type="number" id="speedInfill" value="60" step="5" min="5"></div>
+                <div><label>Top/Bottom</label><input type="number" id="speedTop" value="40" step="5" min="5"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Travel</label><input type="number" id="travelSpeed" value="120" step="5" min="10"></div>
+                <div><label>Initial Layer</label><input type="number" id="speedFirst" value="20" step="5" min="5"></div>
+              </div>
+            </div>
 
-    <section id="bom">
-      <div class="sec-num">03</div>
-      <h2>Cost &amp; BOM</h2>
-      <div class="cost"><sup>AUD</sup>&lt; 800</div>
-      <p>We will also be making it under 800 AUD in parts so it is affordable.</p>
-      <div class="bom-note">
-        <b>BOM Status:</b> I am still adding things to the README, BOM, and the 3D models. This is not even close to finished, this is just the start of this project.
+            <!-- Temperatures -->
+            <div class="field-group">
+              <div class="field-group-title">Temperatures</div>
+              <div class="field-row">
+                <div><label>Nozzle</label><input type="number" id="nozzleTemp" value="200" step="5" min="150" max="300"></div>
+                <div><label>Bed</label><input type="number" id="bedTemp" value="60" step="5" min="0" max="120"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Chamber</label><input type="number" id="chamberTemp" value="0" step="5" min="0"></div>
+                <div><label>Cooling</label><input type="number" id="fanSpeed" value="100" min="0" max="100"></div>
+              </div>
+            </div>
+
+            <!-- Retraction -->
+            <div class="field-group">
+              <div class="field-group-title">Retraction</div>
+              <div class="field-row">
+                <div><label>Distance</label><input type="number" id="retraction" value="6" step="0.5" min="0" max="15"></div>
+                <div><label>Speed</label><input type="number" id="retractSpeed" value="40" step="5" min="5" max="100"></div>
+              </div>
+              <div class="field">
+                <label>Z-Hop (mm)</label>
+                <input type="number" id="zHop" value="0" step="0.1" min="0" max="5">
+              </div>
+              <div class="field">
+                <label>Extra Restart</label>
+                <input type="number" id="extraRestart" value="0" step="0.1" min="-2" max="2">
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div><label>Perims</label><input type="number" id="perimeters" value="2" min="1" max="10"></div>
+              <div><label>Bottom</label><input type="number" id="bottomLayers" value="3" min="0" max="20"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Top</label><input type="number" id="topLayers" value="3" min="0" max="20"></div>
+              <div><label>Fan %</label><input type="number" id="fanSpeed" value="100" min="0" max="100"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support -->
+        <div class="section" id="supportSection">
+          <div class="section-title" data-section="support">Support</div>
+          <div class="section-content" id="supportContent">
+            <div class="field">
+              <label>Support Mode</label>
+              <select id="supportMode">
+                <option value="none">None</option>
+                <option value="touching">Touching Bed</option>
+                <option value="everywhere">Everywhere</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Support Density <span id="supportDensityVal" class="text-accent">15%</span></label>
+              <input type="range" id="supportDensity" min="5" max="30" value="15" step="1">
+            </div>
+            <div class="field-row">
+              <div><label>Pattern</label>
+                <select id="supportPattern">
+                  <option value="lines">Lines</option>
+                  <option value="grid">Grid</option>
+                  <option value="triangles">Triangles</option>
+                </select>
+              </div>
+              <div><label>Angle</label><input type="number" id="supportAngle" value="50" step="5" min="0" max="90"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Z Distance</label><input type="number" id="supportZ" value="0.2" step="0.05" min="0.1"></div>
+              <div><label>XY Distance</label><input type="number" id="supportXY" value="0.8" step="0.1" min="0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Adhesion -->
+        <div class="section" id="adhesionSection">
+          <div class="section-title" data-section="adhesion">Adhesion</div>
+          <div class="section-content" id="adhesionContent">
+            <div class="field">
+              <label>Brim/Raft</label>
+              <select id="adhesionType">
+                <option value="none">None</option>
+                <option value="brim">Brim</option>
+                <option value="raft">Raft</option>
+                <option value="skirt">Skirt</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Brim Width (mm)</label>
+              <input type="number" id="brimWidth" value="5" step="1" min="0" max="20">
+            </div>
+            <div class="field">
+              <label>Skirt Count</label>
+              <input type="number" id="skirtCount" value="2" min="0" max="10">
+            </div>
+            <div class="field">
+              <label>Skirt Distance (mm)</label>
+              <input type="number" id="skirtDist" value="4" step="1" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced -->
+        <div class="section" id="advancedSection">
+          <div class="section-title" data-section="advanced">Advanced</div>
+          <div class="section-content" id="advancedContent">
+            <div class="field-group">
+              <div class="field-group-title">Pressure Advance / Flow</div>
+              <div class="field-row">
+                <div><label>Pressure Adv</label><input type="number" id="pressureAdv" value="0" step="0.01" min="0" max="0.2"></div>
+                <div><label>Flow %</label><input type="number" id="flowRate" value="100" step="1" min="50" max="150"></div>
+              </div>
+              <div class="field">
+                <label>Max Volumetric (mm³/s)</label>
+                <input type="number" id="maxVolumetric" value="12" step="1" min="1" max="50">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-group-title">Variable Layer Height</div>
+              <div class="field-row">
+                <div><label>Min Layer</label><input type="number" id="varLayerMin" value="0.1" step="0.05" min="0.05"></div>
+                <div><label>Max Layer</label><input type="number" id="varLayerMax" value="0.3" step="0.05" min="0.1"></div>
+              </div>
+              <div class="field">
+                <label>Layer Height Variation</label>
+                <select id="varLayerMode">
+                  <option value="none">None</option>
+                  <option value="coarse">Coarse (bottom)</option>
+                  <option value="fine">Fine (top)</option>
+                  <option value="auto">Auto</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-group-title">Cooling</div>
+              <div class="field-row">
+                <div><label>Min Fan</label><input type="number" id="fanMin" value="0" min="0" max="100"></div>
+                <div><label>Max Fan</label><input type="number" id="fanMax" value="100" min="0" max="100"></div>
+              </div>
+              <div class="field">
+                <label>Fan Threshold (C)</label>
+                <input type="number" id="fanThreshold" value="100" step="5" min="0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Laser Settings -->
+        <div class="section hidden" id="laserSection">
+          <div class="section-title" data-section="laser">Laser</div>
+          <div class="section-content" id="laserContent">
+            <div class="field-group">
+              <div class="field-group-title">Laser</div>
+              <div class="field-row">
+                <div><label>Power (W)</label><input type="number" id="laserPower" value="10" step="1" min="1" max="100"></div>
+                <div><label>Speed</label><input type="number" id="laserSpeed" value="1000" step="50" min="50"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Passes</label><input type="number" id="laserPasses" value="1" min="1" max="10"></div>
+                <div><label>Mode</label>
+                  <select id="laserMode">
+                    <option value="engrave">Engrave</option>
+                    <option value="cut">Cut</option>
+                    <option value="vector">Vector</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label>PWM Max</label>
+                <input type="number" id="laserPWM" value="255" min="0" max="255">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CNC Settings -->
+        <div class="section hidden" id="cncSection">
+          <div class="section-title" data-section="cnc">CNC</div>
+          <div class="section-content" id="cncContent">
+            <div class="field-group">
+              <div class="field-group-title">Spindle</div>
+              <div class="field-row">
+                <div><label>RPM</label><input type="number" id="spindleSpeed" value="12000" step="500" min="0"></div>
+                <div><label>Feed</label><input type="number" id="feedRate" value="800" step="50" min="10"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Plunge</label><input type="number" id="plungeRate" value="200" step="10" min="10"></div>
+                <div><label>Depth</label><input type="number" id="depthPerPass" value="1.5" step="0.1" min="0.1"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Tool Dia</label><input type="number" id="toolDiameter" value="3.175" step="0.1" min="0.1"></div>
+                <div><label>Op</label>
+                  <select id="cncOp">
+                    <option value="drill">Drill</option>
+                    <option value="pocket">Pocket</option>
+                    <option value="contour">Contour</option>
+                    <option value="drill_contour">Drill+Contour</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+          <div class="section-title" data-section="actions">Actions</div>
+          <div class="section-content" id="actionsContent">
+            <div style="display:flex;gap:4px">
+              <button id="btnSlice" class="primary" disabled style="flex:1">Slice</button>
+              <button id="btnPreview" disabled style="flex:1">Preview</button>
+            </div>
+            <button id="btnDownload" disabled class="mt-6" style="width:100%">Download G-code</button>
+            <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="log" id="log" style="display:none"></div>
+            <div class="gcode-preview" id="gcodePreview" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- Transform -->
+        <div class="section">
+          <div class="section-title" data-section="transform">Transform</div>
+          <div class="section-content" id="transformContent">
+            <div class="field">
+              <label>Scale</label>
+              <div class="slider-row">
+                <input type="range" id="modelScale" min="10" max="500" value="100" step="1">
+                <span class="slider-val" id="scaleVal">100%</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><label>Rot X</label><input type="number" id="rotX" value="0" step="5"></div>
+              <div><label>Rot Z</label><input type="number" id="rotZ" value="0" step="5"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Pos X</label><input type="number" id="posX" value="0" step="1"></div>
+              <div><label>Pos Y</label><input type="number" id="posY" value="0" step="1"></div>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <button id="btnApplyTransform" class="primary" style="flex:1">Apply</button>
+              <button id="btnUndo" class="small" disabled>Undo</button>
+              <button id="btnRedo" class="small" disabled>Redo</button>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <section id="recycle">
-      <div class="sec-num">04</div>
-      <h2>Recycle Your 3D Printer</h2>
-      <p>Have an old, broken, or unused 3D printer? We will take it, harvest the good parts, and put them toward future FERROWORKER builds. This keeps e-waste out of landfill and lowers the cost of open-source 3D printing for everyone.</p>
-      <ul class="plain">
-        <li class="recycle-card">
-          <div class="li-head"><b>What we accept</b></div>
-          <span>FDM printers, extruders, hotends, stepper motors, rods, bearings, belts, and electronics. Broken or incomplete is fine.</span>
-        </li>
-        <li class="recycle-card">
-          <div class="li-head"><b>What we cannot accept</b></div>
-          <span>Resin vats, IPA-contaminated parts, or machines soaked in hazardous chemicals.</span>
-        </li>
-        <li class="recycle-card">
-          <div class="li-head"><b>Shipping policy</b></div>
-          <span>Australia: we pay for shipping. International: sender pays for shipping. We will provide a shipping label or drop-off details after confirming the donation.</span>
-        </li>
-        <li class="recycle-card">
-          <div class="li-head"><b>Drop-off / mailing address</b></div>
-          <span>Brisbane, Queensland, Australia. Exact address will be provided by email after your submission is accepted.</span>
-        </li>
-        <li class="recycle-card">
-          <div class="li-head"><b>Contact</b></div>
-          <span>Email <a href="mailto:ferroworks@outlook.com.au">ferroworks@outlook.com.au</a>. Please include photos and a short description of the printer.</span>
-        </li>
-      </ul>
-
-      <form class="recycle-form" id="recycle-form">
-        <input type="text" id="recycle-name" placeholder="Your name" required>
-        <input type="email" id="recycle-email" placeholder="Email address" required>
-        <input type="tel" id="recycle-phone" placeholder="Phone number">
-        <select id="recycle-location" required>
-          <option value="" disabled selected>Location</option>
-          <option value="australia">Australia</option>
-          <option value="international">International</option>
-        </select>
-        <input type="text" id="recycle-printer" placeholder="Printer make/model or short description" required>
-        <textarea id="recycle-details" placeholder="Condition, issues, included parts, and any useful details." required></textarea>
-        <button type="submit">Submit printer donation request</button>
-        <div class="recycle-confirm" id="recycle-confirm" style="display:none;">Request received. We will reply with next steps.</div>
-      </form>
-
-    </section>
-  </main>
-
-  <footer>
-    <div>FERROWORKER · GPL-3.0 License · made by Riley Wood &amp; sami</div>
-    <div>
-      <a href="https://github.com/printingstupidity313/FERROWORKER" target="_blank" rel="noopener">GitHub ↗</a>
-      <span style="color:var(--rule);margin:0 8px;">|</span>
-      <a href="https://hackclub.slack.com/archives/C0C0V63AW4R" target="_blank" rel="noopener">Slack ↗</a>
     </div>
-  </footer>
+
+    <!-- Viewer -->
+    <div class="viewer">
+      <div id="viewer3d"></div>
+
+      <div class="viewer-toolbar">
+        <button id="viewTop" title="Top view">Top</button>
+        <button id="viewFront" title="Front view">Front</button>
+        <button id="viewSide" title="Side view">Side</button>
+        <button id="viewIso" title="Isometric" class="active">Iso</button>
+        <button id="toggleGrid" class="active">Grid</button>
+        <button id="toggleAxes" class="active">Axes</button>
+        <button id="toggleWireframe">Wire</button>
+        <button id="centerModel">Center</button>
+      </div>
+
+      <div class="viewer-info">
+        <div>Vol: <span class="value">1000×1000×1000 mm</span></div>
+        <div style="margin-top:2px">Models: <span class="value" id="modelCount">0</span></div>
+        <div style="margin-top:2px">Sel: <span class="value" id="selectedName">None</span></div>
+        <div style="margin-top:2px">Layers: <span class="value" id="layerCount">0</span></div>
+        <div style="margin-top:2px">Est: <span class="value" id="estTime">--</span></div>
+      </div>
+
+      <div class="viewer-actions">
+        <button id="btnLoadViewer" title="Load files">+ Load</button>
+      </div>
+
+      <div class="drop-overlay" id="dropZone">
+        <div class="drop-box">
+          <h3>Drop 3D files</h3>
+          <p>STL, OBJ, PLY supported</p>
+        </div>
+      </div>
+
+      <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-percent" id="progressPercent">0%</div>
+        <div class="progress-text" id="progressText">Slicing...</div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar sidebar-right" style="width:240px;min-width:240px">
+      <div class="sidebar-header">Layer Preview</div>
+      <div class="sidebar-scroll">
+        <div class="section">
+          <div class="field">
+            <label>Layer</label>
+            <div class="slider-row">
+              <input type="range" id="layerSlider" min="0" max="0" value="0" step="1">
+              <span class="slider-val" id="layerLabel">0/0</span>
+            </div>
+          </div>
+          <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title" data-section="stats">Statistics</div>
+          <div class="section-content" id="statsContent">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Print Time</div>
+                <div class="stat-value" id="statTime">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Filament</div>
+                <div class="stat-value" id="statFilament">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Layers</div>
+                <div class="stat-value" id="statLayers">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Triangles</div>
+                <div class="stat-value" id="statTris">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title" data-section="gcodeInfo">G-code Info</div>
+          <div class="section-content" id="gcodeInfoContent">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Size</div>
+                <div class="stat-value" id="gcodeSize">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Commands</div>
+                <div class="stat-value" id="gcodeCmds">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span>FERROWORKER Slicer v1.0</span>
+    <span><span class="status-mode" id="statusMode">FDM</span> <span class="status-text" id="statusText">Ready</span></span>
+  </div>
 </div>
 
-<script>
-  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-    link.addEventListener('click', function (event) {
-      var target = document.getElementById(link.getAttribute('href').slice(1));
-      if (target) {
-        event.preventDefault();
-        target.scrollIntoView({ behavior:'smooth', block:'start' });
-      }
-    });
-  });
+<div class="toast-container" id="toastContainer"></div>
+<div class="context-menu" id="contextMenu" style="display:none"></div>
 
-  (function () {
-    var recycleForm = document.getElementById('recycle-form');
-    var recycleConfirm = document.getElementById('recycle-confirm');
-
-    if (recycleForm) {
-      recycleForm.addEventListener('submit', function (event) {
-        event.preventDefault();
-        var name = document.getElementById('recycle-name').value.trim();
-        var email = document.getElementById('recycle-email').value.trim();
-        var phone = document.getElementById('recycle-phone').value.trim();
-        var location = document.getElementById('recycle-location').value;
-        var printer = document.getElementById('recycle-printer').value.trim();
-        var details = document.getElementById('recycle-details').value.trim();
-
-        var subject = encodeURIComponent('Printer Donation Request - ' + printer);
-        var body = encodeURIComponent(
-          'Name: ' + name + '\n' +
-          'Email: ' + email + '\n' +
-          'Phone: ' + phone + '\n' +
-          'Location: ' + location + '\n' +
-          'Printer: ' + printer + '\n\n' +
-          'Details:\n' + details
-        );
-
-        window.location.href = 'mailto:ferroworks@outlook.com.au?subject=' + subject + '&body=' + body;
-
-        if (recycleConfirm) recycleConfirm.style.display = 'block';
-        recycleForm.reset();
-      });
-    }
-  })();
+<script type="module">
+import { initApp } from './js/app.js';
+window.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
 </html>
