@@ -73,9 +73,12 @@ canvas{display:block}
     </div>
     <div class="panel-scroll">
       <div class="section">
-        <div class="section-title">Files</div>
-        <div id="fileList" style="max-height:120px;overflow-y:auto;background:var(--paper);border:1px solid var(--rule);padding:6px;margin-bottom:8px;display:none"></div>
-        <button class="secondary" id="btnAddFiles" style="width:100%">Add Files</button>
+        <div class="section-title">Models</div>
+        <div id="modelList" style="max-height:150px;overflow-y:auto;background:var(--paper);border:1px solid var(--rule);padding:4px;margin-bottom:8px;display:none"></div>
+        <div style="display:flex;gap:6px">
+          <button class="secondary" id="btnAddFiles" style="flex:1">Add Files</button>
+          <button class="secondary" id="btnClearAll" style="flex:1">Clear All</button>
+        </div>
         <input type="file" id="fileInput" accept=".stl,.3mf,.obj,.ply" multiple style="display:none">
       </div>
       
@@ -239,7 +242,8 @@ canvas{display:block}
     <div id="viewer3d"></div>
     <div class="viewer-overlay" id="viewerInfo">
       <div>Build Volume: <strong>1000 x 1000 x 1000 mm</strong></div>
-      <div style="margin-top:4px">Model: <strong id="modelName">No model loaded</strong></div>
+      <div style="margin-top:4px">Models: <strong id="modelCount">0</strong></div>
+      <div style="margin-top:4px">Selected: <strong id="selectedName">None</strong></div>
       <div style="margin-top:4px">Layers: <strong id="layerCount">0</strong></div>
     </div>
     <div class="drop-zone" id="dropZone">
@@ -266,14 +270,14 @@ canvas{display:block}
 
 const STATE = {
   mode: 'fdm',
-  mesh: null,
-  model: null,
-  originalPositions: null,
+  models: [],
+  selectedModelId: null,
   sliceLayers: [],
   currentLayer: 0,
   layerMeshes: [],
   sliced: false,
-  showLayerOnly: false
+  showLayerOnly: false,
+  nextId: 1
 };
 
 const COLORS = {
@@ -365,17 +369,16 @@ function setMode(mode) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
   document.getElementById('laserSection').style.display = mode === 'laser' ? 'block' : 'none';
   document.getElementById('cncSection').style.display = mode === 'cnc' ? 'block' : 'none';
-  if (STATE.mesh) updateModelColor();
+  STATE.models.forEach(m => { if (m.mesh && m.mesh.material) m.mesh.material.color.setHex(COLORS[mode] || COLORS.fdm); });
 }
 
-function updateModelColor() {
-  if (!STATE.model) return;
+function updateModelColor(model) {
+  if (!model || !model.mesh) return;
   const c = COLORS[STATE.mode] || COLORS.fdm;
-  STATE.model.material.color.setHex(c);
+  model.mesh.material.color.setHex(c);
 }
 
 function loadSTL(arrayBuffer, fileName) {
-  clearModel();
   log('Parsing ' + (fileName || 'STL') + '...', 'info');
   setProgress(10);
 
@@ -387,7 +390,7 @@ function loadSTL(arrayBuffer, fileName) {
     } else {
       geometry = parseASCII(new TextDecoder().decode(arrayBuffer));
     }
-    finishLoad(geometry, fileName);
+    addModel(geometry, fileName);
   } catch (e) {
     log('Error loading file: ' + e.message, 'error');
     console.error(e);
@@ -396,13 +399,12 @@ function loadSTL(arrayBuffer, fileName) {
 }
 
 function loadOBJ(text, fileName) {
-  clearModel();
   log('Parsing ' + (fileName || 'OBJ') + '...', 'info');
   setProgress(10);
 
   try {
     const geometry = parseOBJ(text);
-    finishLoad(geometry, fileName);
+    addModel(geometry, fileName);
   } catch (e) {
     log('Error loading OBJ: ' + e.message, 'error');
     console.error(e);
@@ -411,13 +413,12 @@ function loadOBJ(text, fileName) {
 }
 
 function loadPLY(buffer, fileName) {
-  clearModel();
   log('Parsing ' + (fileName || 'PLY') + '...', 'info');
   setProgress(10);
 
   try {
     const geometry = parsePLY(buffer);
-    finishLoad(geometry, fileName);
+    addModel(geometry, fileName);
   } catch (e) {
     log('Error loading PLY: ' + e.message, 'error');
     console.error(e);
@@ -425,7 +426,7 @@ function loadPLY(buffer, fileName) {
   }
 }
 
-function finishLoad(geometry, fileName) {
+function addModel(geometry, fileName) {
   geometry.computeBoundingBox();
   geometry.computeVertexNormals();
   geometry.center();
@@ -449,21 +450,21 @@ function finishLoad(geometry, fileName) {
   });
 
   const mesh = new THREE.Mesh(geometry, material);
-  STATE.mesh = mesh;
-  STATE.model = mesh;
-  STATE.originalPositions = geometry.attributes.position.array.slice();
-
-  log('Loaded ' + (fileName || 'model') + '. Size: ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm', 'info');
-  document.getElementById('modelName').textContent = (fileName || 'Model') + ' ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm';
-
+  const id = STATE.nextId++;
+  const model = { id, mesh, name: fileName || ('Model ' + id), visible: true };
+  STATE.models.push(model);
   scene.add(mesh);
-  document.getElementById('btnSlice').disabled = false;
-  document.getElementById('btnPreview').disabled = false;
-  document.getElementById('btnDownload').disabled = false;
 
+  if (STATE.models.length === 1) {
+    STATE.selectedModelId = id;
+  }
+
+  log('Loaded ' + model.name + '. Size: ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm', 'info');
+  updateModelInfo();
+  updateModelList();
   fitCamera();
   setProgress(100);
-  log('Ready to slice.', 'info');
+  log('Ready. ' + STATE.models.length + ' model(s) in scene.', 'info');
 }
 
 function parseSTL(buffer) {
@@ -553,13 +554,13 @@ function parsePLY(buffer) {
 }
 
 function clearModel() {
-  if (STATE.model) {
-    scene.remove(STATE.model);
-    if (STATE.model.geometry) STATE.model.geometry.dispose();
-    if (STATE.model.material) STATE.model.material.dispose();
-    STATE.model = null;
-    STATE.mesh = null;
-  }
+  STATE.models.forEach(m => {
+    scene.remove(m.mesh);
+    if (m.mesh.geometry) m.mesh.geometry.dispose();
+    if (m.mesh.material) m.mesh.material.dispose();
+  });
+  STATE.models = [];
+  STATE.selectedModelId = null;
   clearLayers();
 }
 
@@ -579,14 +580,91 @@ function clearLayers() {
 }
 
 function fitCamera() {
-  if (!STATE.model) return;
-  const box = new THREE.Box3().setFromObject(STATE.model);
+  if (!STATE.models.length) return;
+  const box = new THREE.Box3();
+  STATE.models.forEach(m => { if (m.visible) box.expandByObject(m.mesh); });
+  if (box.isEmpty()) return;
   const size = new THREE.Vector3();
   box.getSize(size);
   const maxDim = Math.max(size.x, size.y, size.z, 1);
   const dist = maxDim * 1.8;
   camera.position.set(dist * 0.7, dist * 0.6, dist * 0.8);
   camera.lookAt(box.getCenter(new THREE.Vector3()));
+}
+
+function getSelectedModel() {
+  return STATE.models.find(m => m.id === STATE.selectedModelId) || STATE.models[0] || null;
+}
+
+function updateModelInfo() {
+  const selected = getSelectedModel();
+  document.getElementById('modelCount').textContent = STATE.models.length;
+  document.getElementById('selectedName').textContent = selected ? selected.name : 'None';
+  document.getElementById('layerCount').textContent = STATE.sliceLayers.length;
+}
+
+function updateModelList() {
+  const list = document.getElementById('modelList');
+  list.innerHTML = '';
+  list.style.display = STATE.models.length ? 'block' : 'none';
+  STATE.models.forEach(m => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;font-size:.75rem;border-bottom:1px solid var(--rule)';
+    const isSelected = m.id === STATE.selectedModelId;
+    if (isSelected) item.style.background = 'rgba(181,69,27,0.08)';
+
+    const visBtn = document.createElement('button');
+    visBtn.textContent = m.visible ? '◉' : '○';
+    visBtn.title = 'Toggle visibility';
+    visBtn.style.cssText = 'padding:1px 4px;font-size:.7rem;background:transparent;color:var(--ink);border:1px solid var(--rule)';
+    visBtn.addEventListener('click', () => {
+      m.visible = !m.visible;
+      m.mesh.visible = m.visible;
+      updateModelList();
+    });
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = m.name;
+    nameSpan.style.flex = '1';
+    nameSpan.style.cursor = 'pointer';
+    nameSpan.addEventListener('click', () => {
+      STATE.selectedModelId = m.id;
+      updateModelList();
+      applyTransformToSelected();
+    });
+
+    const rmBtn = document.createElement('button');
+    rmBtn.textContent = '×';
+    rmBtn.title = 'Remove';
+    rmBtn.style.cssText = 'padding:1px 6px;font-size:.7rem;background:transparent;color:var(--rust);border:1px solid var(--rule)';
+    rmBtn.addEventListener('click', () => removeModel(m.id));
+
+    item.appendChild(visBtn);
+    item.appendChild(nameSpan);
+    item.appendChild(rmBtn);
+    list.appendChild(item);
+  });
+  updateModelInfo();
+}
+
+function removeModel(id) {
+  const idx = STATE.models.findIndex(m => m.id === id);
+  if (idx === -1) return;
+  const m = STATE.models[idx];
+  scene.remove(m.mesh);
+  if (m.mesh.geometry) m.mesh.geometry.dispose();
+  if (m.mesh.material) m.mesh.material.dispose();
+  STATE.models.splice(idx, 1);
+  if (STATE.selectedModelId === id) {
+    STATE.selectedModelId = STATE.models.length ? STATE.models[0].id : null;
+  }
+  updateModelList();
+  if (!STATE.models.length) {
+    document.getElementById('btnSlice').disabled = true;
+    document.getElementById('btnPreview').disabled = true;
+    document.getElementById('btnDownload').disabled = true;
+  }
+  fitCamera();
 }
 
 function getSettings() {
@@ -618,25 +696,43 @@ function getSettings() {
 }
 
 function sliceModel() {
-  if (!STATE.mesh) return;
+  if (!STATE.models.length) return;
   clearLayers();
-  log('Starting slice...', 'info');
+  log('Starting slice for ' + STATE.models.length + ' model(s)...', 'info');
   setProgress(5);
 
-  const geom = STATE.mesh.geometry;
-  const pos = geom.attributes.position.array;
   const triangles = [];
-  for (let i = 0; i < pos.length; i += 9) {
-    triangles.push([
-      new THREE.Vector3(pos[i], pos[i+1], pos[i+2]),
-      new THREE.Vector3(pos[i+3], pos[i+4], pos[i+5]),
-      new THREE.Vector3(pos[i+6], pos[i+7], pos[i+8])
-    ]);
+  STATE.models.forEach(m => {
+    if (!m.visible) return;
+    const geom = m.mesh.geometry;
+    const pos = geom.attributes.position.array;
+    const worldPos = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+    for (let i = 0; i < pos.length; i += 9) {
+      const v0 = new THREE.Vector3(pos[i], pos[i+1], pos[i+2]);
+      const v1 = new THREE.Vector3(pos[i+3], pos[i+4], pos[i+5]);
+      const v2 = new THREE.Vector3(pos[i+6], pos[i+7], pos[i+8]);
+      v0.applyMatrix4(m.mesh.matrixWorld);
+      v1.applyMatrix4(m.mesh.matrixWorld);
+      v2.applyMatrix4(m.mesh.matrixWorld);
+      triangles.push([v0, v1, v2]);
+    }
+  });
+
+  if (!triangles.length) {
+    log('No visible models to slice.', 'warn');
+    setProgress(0);
+    return;
   }
 
-  const bb = new THREE.Box3().setFromBufferAttribute(geom.attributes.position);
-  const minZ = bb.min.z;
-  const maxZ = bb.max.z;
+  let minZ = Infinity, maxZ = -Infinity;
+  triangles.forEach(tri => {
+    tri.forEach(v => {
+      if (v.z < minZ) minZ = v.z;
+      if (v.z > maxZ) maxZ = v.z;
+    });
+  });
+
   const layerHeight = parseFloat(document.getElementById('layerHeight').value) || 0.2;
   const numLayers = Math.max(1, Math.ceil((maxZ - minZ) / layerHeight));
 
@@ -766,17 +862,20 @@ function generateGcode() {
     lines.push('G28 ; home all axes');
     lines.push('G29 ; auto bed level (if equipped)');
     lines.push('G1 Z5 F3000 ; lift nozzle');
-    const bb = new THREE.Box3().setFromObject(STATE.model);
-    const center = bb.getCenter(new THREE.Vector3());
-    const wipeX = center.x + 60;
-    const wipeY = center.y + 60;
-    lines.push('G1 X' + wipeX.toFixed(2) + ' Y' + wipeY.toFixed(2) + ' F' + (s.travelSpeed * 60) + ' ; move to wipe position');
-    lines.push('G1 Z0.3 F3000 ; prime line height');
-    for (let i = 0; i < 3; i++) {
-      lines.push('G1 X' + (wipeX - 40).toFixed(2) + ' E10 F' + (s.printSpeed * 60));
-      lines.push('G1 Y' + (wipeY + 15).toFixed(2) + ' E10');
-      lines.push('G1 X' + wipeX.toFixed(2) + ' E10');
-      lines.push('G1 Y' + (wipeY - 15).toFixed(2) + ' E10');
+    const firstModel = STATE.models.find(m => m.visible) || STATE.models[0];
+    if (firstModel) {
+      const bb = new THREE.Box3().setFromObject(firstModel.mesh);
+      const center = bb.getCenter(new THREE.Vector3());
+      const wipeX = center.x + 60;
+      const wipeY = center.y + 60;
+      lines.push('G1 X' + wipeX.toFixed(2) + ' Y' + wipeY.toFixed(2) + ' F' + (s.travelSpeed * 60) + ' ; move to wipe position');
+      lines.push('G1 Z0.3 F3000 ; prime line height');
+      for (let i = 0; i < 3; i++) {
+        lines.push('G1 X' + (wipeX - 40).toFixed(2) + ' E10 F' + (s.printSpeed * 60));
+        lines.push('G1 Y' + (wipeY + 15).toFixed(2) + ' E10');
+        lines.push('G1 X' + wipeX.toFixed(2) + ' E10');
+        lines.push('G1 Y' + (wipeY - 15).toFixed(2) + ' E10');
+      }
     }
     lines.push('G1 Z' + s.layerHeight.toFixed(2) + ' F3000');
     lines.push('M106 S' + Math.round(s.fanSpeed * 2.55) + ' ; fan on');
@@ -1037,23 +1136,35 @@ function showLayer(idx) {
 }
 
 function applyTransform() {
-  if (!STATE.mesh) return;
+  const model = getSelectedModel();
+  if (!model) return;
   const scale = parseFloat(document.getElementById('modelScale').value) / 100;
   const rx = THREE.MathUtils.degToRad(parseFloat(document.getElementById('rotX').value) || 0);
   const rz = THREE.MathUtils.degToRad(parseFloat(document.getElementById('rotZ').value) || 0);
   const px = parseFloat(document.getElementById('posX').value) || 0;
   const py = parseFloat(document.getElementById('posY').value) || 0;
 
-  STATE.mesh.scale.set(scale, scale, scale);
-  STATE.mesh.rotation.set(rx, 0, rz);
-  STATE.mesh.position.set(px, py, 0);
-  STATE.mesh.updateMatrixWorld(true);
+  model.mesh.scale.set(scale, scale, scale);
+  model.mesh.rotation.set(rx, 0, rz);
+  model.mesh.position.set(px, py, 0);
+  model.mesh.updateMatrixWorld(true);
 
   if (STATE.sliced) {
     log('Re-slice needed after transform.', 'warn');
     STATE.sliced = false;
     clearLayers();
   }
+}
+
+function applyTransformToSelected() {
+  const model = getSelectedModel();
+  if (!model) return;
+  document.getElementById('modelScale').value = Math.round(model.mesh.scale.x * 100);
+  document.getElementById('scaleVal').textContent = Math.round(model.mesh.scale.x * 100) + '%';
+  document.getElementById('rotX').value = Math.round(THREE.MathUtils.radToDeg(model.mesh.rotation.x));
+  document.getElementById('rotZ').value = Math.round(THREE.MathUtils.radToDeg(model.mesh.rotation.z));
+  document.getElementById('posX').value = Math.round(model.mesh.position.x);
+  document.getElementById('posY').value = Math.round(model.mesh.position.y);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1064,6 +1175,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btnAddFiles').addEventListener('click', () => document.getElementById('fileInput').click());
+  document.getElementById('btnClearAll').addEventListener('click', () => {
+    if (STATE.models.length && confirm('Remove all models?')) {
+      clearModel();
+      updateModelList();
+      document.getElementById('btnSlice').disabled = true;
+      document.getElementById('btnPreview').disabled = true;
+      document.getElementById('btnDownload').disabled = true;
+    }
+  });
   document.getElementById('fileInput').addEventListener('change', e => {
     Array.from(e.target.files).forEach(file => loadFile(file));
     e.target.value = '';
@@ -1095,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', () => {
           log('3MF support requires server-side processing. Use STL or OBJ.', 'warn');
           return;
         }
-        addFileToList(file.name, file.size);
       } catch (err) {
         log('Failed to load ' + file.name + ': ' + err.message, 'error');
       }
@@ -1105,22 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       reader.readAsText(file);
     }
-  }
-
-  function addFileToList(name, size) {
-    const list = document.getElementById('fileList');
-    list.style.display = 'block';
-    const item = document.createElement('div');
-    item.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.75rem';
-    const label = document.createElement('span');
-    label.textContent = name + ' (' + (size / 1024).toFixed(1) + ' KB)';
-    const remove = document.createElement('button');
-    remove.textContent = 'x';
-    remove.style.cssText = 'padding:1px 6px;font-size:.65rem;background:var(--rust);color:var(--paper);border:1px solid var(--rust)';
-    remove.addEventListener('click', () => { item.remove(); if (!list.children.length) list.style.display = 'none'; });
-    item.appendChild(label);
-    item.appendChild(remove);
-    list.appendChild(item);
   }
 
   document.getElementById('infill').addEventListener('input', e => {
@@ -1182,20 +1285,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleAxes = document.getElementById('toggleAxes');
   toggleAxes.addEventListener('click', () => { axesHelper.visible = !axesHelper.visible; toggleAxes.classList.toggle('active'); });
   document.getElementById('toggleWireframe').addEventListener('click', function() {
-    if (STATE.model) STATE.model.material.wireframe = !STATE.model.material.wireframe;
+    const model = getSelectedModel();
+    if (model && model.mesh) model.mesh.material.wireframe = !model.mesh.material.wireframe;
     this.classList.toggle('active');
   });
   document.getElementById('centerModel').addEventListener('click', () => {
-    if (!STATE.model) return;
-    STATE.model.position.set(0, 0, 0);
-    STATE.model.rotation.set(0, 0, 0);
-    STATE.model.scale.set(1, 1, 1);
-    document.getElementById('modelScale').value = 100;
-    document.getElementById('scaleVal').textContent = '100%';
-    document.getElementById('rotX').value = 0;
-    document.getElementById('rotZ').value = 0;
-    document.getElementById('posX').value = 0;
-    document.getElementById('posY').value = 0;
+    const model = getSelectedModel();
+    if (!model) return;
+    model.mesh.position.set(0, 0, 0);
+    model.mesh.rotation.set(0, 0, 0);
+    model.mesh.scale.set(1, 1, 1);
+    applyTransformToSelected();
     fitCamera();
   });
 
@@ -1208,11 +1308,14 @@ document.addEventListener('DOMContentLoaded', () => {
   viewerEl.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('mouseup', () => isDragging = false);
   window.addEventListener('mousemove', e => {
-    if (!isDragging || !STATE.model) return;
-    const dx = e.clientX - prevMouse.x;
-    const dy = e.clientY - prevMouse.y;
-    STATE.model.rotation.y += dx * 0.01;
-    STATE.model.rotation.x += dy * 0.01;
+    if (!isDragging) return;
+    const model = getSelectedModel();
+    if (model && model.mesh) {
+      const dx = e.clientX - prevMouse.x;
+      const dy = e.clientY - prevMouse.y;
+      model.mesh.rotation.y += dx * 0.01;
+      model.mesh.rotation.x += dy * 0.01;
+    }
     prevMouse = { x: e.clientX, y: e.clientY };
   });
   viewerEl.addEventListener('wheel', e => {
