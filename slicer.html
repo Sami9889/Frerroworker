@@ -69,10 +69,15 @@ canvas{display:block}
   <div class="panel" style="width:340px;min-width:340px">
     <div class="panel-head">
       <h1>FERROWORKER <span class="mode-badge" id="modeBadge">3D PRINT</span></h1>
-      <button class="secondary" id="btnLoad" style="padding:5px 10px;font-size:.7rem">Load STL</button>
+      <button class="secondary" id="btnLoad" style="padding:5px 10px;font-size:.7rem">Load Files</button>
     </div>
     <div class="panel-scroll">
-      <input type="file" id="fileInput" accept=".stl,.3mf" style="display:none">
+      <div class="section">
+        <div class="section-title">Files</div>
+        <div id="fileList" style="max-height:120px;overflow-y:auto;background:var(--paper);border:1px solid var(--rule);padding:6px;margin-bottom:8px;display:none"></div>
+        <button class="secondary" id="btnAddFiles" style="width:100%">Add Files</button>
+        <input type="file" id="fileInput" accept=".stl,.3mf,.obj,.ply" multiple style="display:none">
+      </div>
       
       <div class="section">
         <div class="section-title">Mode</div>
@@ -239,8 +244,8 @@ canvas{display:block}
     </div>
     <div class="drop-zone" id="dropZone">
       <div class="drop-inner">
-        <h3>Drop STL file here</h3>
-        <p style="color:var(--ink-soft);font-size:.85rem">.stl files supported</p>
+        <h3>Drop 3D files here</h3>
+        <p style="color:var(--ink-soft);font-size:.85rem">STL, OBJ, 3MF, PLY supported</p>
       </div>
     </div>
     <div class="toolbar">
@@ -369,9 +374,9 @@ function updateModelColor() {
   STATE.model.material.color.setHex(c);
 }
 
-function loadSTL(arrayBuffer) {
+function loadSTL(arrayBuffer, fileName) {
   clearModel();
-  log('Parsing STL...', 'info');
+  log('Parsing ' + (fileName || 'STL') + '...', 'info');
   setProgress(10);
 
   try {
@@ -382,49 +387,83 @@ function loadSTL(arrayBuffer) {
     } else {
       geometry = parseASCII(new TextDecoder().decode(arrayBuffer));
     }
-    geometry.computeBoundingBox();
-    geometry.computeVertexNormals();
-    geometry.center();
-
-    const bb = geometry.boundingBox;
-    const minY = bb.min.y;
-    geometry.translate(0, -minY, 0);
-    geometry.computeBoundingBox();
-    const bb2 = geometry.boundingBox;
-    const size = new THREE.Vector3();
-    bb2.getSize(size);
-
-    const material = new THREE.MeshPhongMaterial({
-      color: COLORS[STATE.mode],
-      specular: 0x222222,
-      shininess: 30,
-      flatShading: false,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.9
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    STATE.mesh = mesh;
-    STATE.model = mesh;
-    STATE.originalPositions = geometry.attributes.position.array.slice();
-
-    log('Model loaded. Size: ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm', 'info');
-    document.getElementById('modelName').textContent = size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm';
-
-    scene.add(mesh);
-    document.getElementById('btnSlice').disabled = false;
-    document.getElementById('btnPreview').disabled = false;
-    document.getElementById('btnDownload').disabled = false;
-
-    fitCamera();
-    setProgress(100);
-    log('Ready to slice.', 'info');
+    finishLoad(geometry, fileName);
   } catch (e) {
-    log('Error loading STL: ' + e.message, 'error');
+    log('Error loading file: ' + e.message, 'error');
     console.error(e);
     setProgress(0);
   }
+}
+
+function loadOBJ(text, fileName) {
+  clearModel();
+  log('Parsing ' + (fileName || 'OBJ') + '...', 'info');
+  setProgress(10);
+
+  try {
+    const geometry = parseOBJ(text);
+    finishLoad(geometry, fileName);
+  } catch (e) {
+    log('Error loading OBJ: ' + e.message, 'error');
+    console.error(e);
+    setProgress(0);
+  }
+}
+
+function loadPLY(buffer, fileName) {
+  clearModel();
+  log('Parsing ' + (fileName || 'PLY') + '...', 'info');
+  setProgress(10);
+
+  try {
+    const geometry = parsePLY(buffer);
+    finishLoad(geometry, fileName);
+  } catch (e) {
+    log('Error loading PLY: ' + e.message, 'error');
+    console.error(e);
+    setProgress(0);
+  }
+}
+
+function finishLoad(geometry, fileName) {
+  geometry.computeBoundingBox();
+  geometry.computeVertexNormals();
+  geometry.center();
+
+  const bb = geometry.boundingBox;
+  const minY = bb.min.y;
+  geometry.translate(0, -minY, 0);
+  geometry.computeBoundingBox();
+  const bb2 = geometry.boundingBox;
+  const size = new THREE.Vector3();
+  bb2.getSize(size);
+
+  const material = new THREE.MeshPhongMaterial({
+    color: COLORS[STATE.mode],
+    specular: 0x222222,
+    shininess: 30,
+    flatShading: false,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  STATE.mesh = mesh;
+  STATE.model = mesh;
+  STATE.originalPositions = geometry.attributes.position.array.slice();
+
+  log('Loaded ' + (fileName || 'model') + '. Size: ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm', 'info');
+  document.getElementById('modelName').textContent = (fileName || 'Model') + ' ' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm';
+
+  scene.add(mesh);
+  document.getElementById('btnSlice').disabled = false;
+  document.getElementById('btnPreview').disabled = false;
+  document.getElementById('btnDownload').disabled = false;
+
+  fitCamera();
+  setProgress(100);
+  log('Ready to slice.', 'info');
 }
 
 function parseSTL(buffer) {
@@ -456,6 +495,57 @@ function parseASCII(text) {
       const parts = line.split(/\s+/);
       positions.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
     }
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geom;
+}
+
+function parseOBJ(text) {
+  const lines = text.split('\n');
+  const positions = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('v ')) {
+      const parts = line.split(/\s+/);
+      positions.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+    }
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geom;
+}
+
+function parsePLY(buffer) {
+  const view = new DataView(buffer);
+  let offset = 0;
+  const readLine = () => {
+    let line = '';
+    while (offset < buffer.byteLength) {
+      const c = String.fromCharCode(view.getUint8(offset++));
+      if (c === '\n') break;
+      line += c;
+    }
+    return line.trim();
+  };
+  const header = {};
+  while (offset < buffer.byteLength) {
+    const line = readLine();
+    if (line === 'end_header') break;
+    const parts = line.split(/\s+/);
+    if (parts[0] === 'element' && parts[1] === 'vertex') header.vertexCount = parseInt(parts[2]);
+    else if (parts[0] === 'property' && parts[2] === 'x') header.hasX = true;
+    else if (parts[0] === 'property' && parts[2] === 'y') header.hasY = true;
+    else if (parts[0] === 'property' && parts[2] === 'z') header.hasZ = true;
+  }
+  const positions = [];
+  for (let i = 0; i < (header.vertexCount || 0); i++) {
+    if (header.hasX) positions.push(view.getFloat32(offset, true));
+    offset += 4;
+    if (header.hasY) positions.push(view.getFloat32(offset, true));
+    offset += 4;
+    if (header.hasZ) positions.push(view.getFloat32(offset, true));
+    offset += 4;
   }
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -973,13 +1063,10 @@ document.addEventListener('DOMContentLoaded', () => {
     tab.addEventListener('click', () => setMode(tab.dataset.mode));
   });
 
-  document.getElementById('btnLoad').addEventListener('click', () => document.getElementById('fileInput').click());
+  document.getElementById('btnAddFiles').addEventListener('click', () => document.getElementById('fileInput').click());
   document.getElementById('fileInput').addEventListener('change', e => {
-    if (e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = ev => loadSTL(ev.target.result);
-      reader.readAsArrayBuffer(e.target.files[0]);
-    }
+    Array.from(e.target.files).forEach(file => loadFile(file));
+    e.target.value = '';
   });
 
   const dropZone = document.getElementById('dropZone');
@@ -988,15 +1075,53 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('drag');
-    if (e.dataTransfer.files[0]) {
-      const f = e.dataTransfer.files[0];
-      if (f.name.endsWith('.stl') || f.name.endsWith('.3mf')) {
-        const reader = new FileReader();
-        reader.onload = ev => loadSTL(ev.target.result);
-        reader.readAsArrayBuffer(f);
-      }
+    if (e.dataTransfer.files.length) {
+      Array.from(e.dataTransfer.files).forEach(file => loadFile(file));
     }
   });
+
+  function loadFile(file) {
+    const ext = file.name.toLowerCase().split('.').pop();
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        if (ext === 'stl') {
+          loadSTL(ev.target.result, file.name);
+        } else if (ext === 'obj') {
+          loadOBJ(ev.target.result, file.name);
+        } else if (ext === 'ply') {
+          loadPLY(ev.target.result, file.name);
+        } else if (ext === '3mf') {
+          log('3MF support requires server-side processing. Use STL or OBJ.', 'warn');
+          return;
+        }
+        addFileToList(file.name, file.size);
+      } catch (err) {
+        log('Failed to load ' + file.name + ': ' + err.message, 'error');
+      }
+    };
+    if (ext === 'stl' || ext === 'ply') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+  }
+
+  function addFileToList(name, size) {
+    const list = document.getElementById('fileList');
+    list.style.display = 'block';
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.75rem';
+    const label = document.createElement('span');
+    label.textContent = name + ' (' + (size / 1024).toFixed(1) + ' KB)';
+    const remove = document.createElement('button');
+    remove.textContent = 'x';
+    remove.style.cssText = 'padding:1px 6px;font-size:.65rem;background:var(--rust);color:var(--paper);border:1px solid var(--rust)';
+    remove.addEventListener('click', () => { item.remove(); if (!list.children.length) list.style.display = 'none'; });
+    item.appendChild(label);
+    item.appendChild(remove);
+    list.appendChild(item);
+  }
 
   document.getElementById('infill').addEventListener('input', e => {
     document.getElementById('infillVal').textContent = e.target.value + '%';
