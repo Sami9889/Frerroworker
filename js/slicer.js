@@ -25,7 +25,7 @@ export function sliceModels(models, layerHeight, onProgress) {
   triangles.forEach(tri => {
     tri.forEach(v => {
       if (v.z < minZ) minZ = v.z;
-      if (v.z > maxZ) maxZ = v.z;
+      if (v.z < maxZ) maxZ = v.z;
     });
   });
 
@@ -103,26 +103,6 @@ function stitchSegments(segments) {
   return polygons;
 }
 
-export function offsetPolygon(poly, offset) {
-  if (poly.length < 3) return poly;
-  const result = [];
-  for (let i = 0; i < poly.length; i++) {
-    const prev = poly[(i - 1 + poly.length) % poly.length];
-    const curr = poly[i];
-    const next = poly[(i + 1) % poly.length];
-    const dx1 = curr.x - prev.x, dy1 = curr.y - prev.y;
-    const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
-    const len1 = Math.sqrt(dx1*dx1 + dy1*dy1) || 1;
-    const len2 = Math.sqrt(dx2*dx2 + dy2*dy2) || 1;
-    const nx1 = -dy1/len1, ny1 = dx1/len1;
-    const nx2 = -dy2/len2, ny2 = dx2/len2;
-    const nx = (nx1 + nx2) / 2, ny = (ny1 + ny2) / 2;
-    const nlen = Math.sqrt(nx*nx + ny*ny) || 1;
-    result.push({ x: curr.x + (nx/nlen) * offset, y: curr.y + (ny/nlen) * offset });
-  }
-  return result;
-}
-
 export function generateInfill(poly, lineWidth, density, pattern) {
   if (density <= 0) return [];
   const bb = new THREE.Box2().setFromPoints(poly.map(p => new THREE.Vector2(p.x, p.y)));
@@ -164,6 +144,34 @@ export function generateInfill(poly, lineWidth, density, pattern) {
       const y0 = bb.min.y + row * spacing * 0.866;
       const xOff = (row % 2) * spacing * 0.5;
       clipLineToPoly(new THREE.Vector2(bb.min.x - 10 + xOff, y0), new THREE.Vector2(bb.max.x + 10 + xOff, y0), poly).forEach(s => lines.push(s));
+    }
+  } else if (pattern === 'cubic') {
+    const h = bb.max.y - bb.min.y;
+    for (let row = 0; row * spacing < h + spacing; row++) {
+      const y0 = bb.min.y + row * spacing;
+      const y1 = bb.min.y + (row + 0.5) * spacing;
+      clipLineToPoly(new THREE.Vector2(bb.min.x - 10, y0), new THREE.Vector2(bb.max.x + 10, y0), poly).forEach(s => lines.push(s));
+      clipLineToPoly(new THREE.Vector2(bb.min.x - 10 + spacing/2, y1), new THREE.Vector2(bb.max.x + 10 + spacing/2, y1), poly).forEach(s => lines.push(s));
+    }
+  } else if (pattern === 'octet') {
+    const h = bb.max.y - bb.min.y;
+    for (let row = 0; row * spacing * 0.866 < h + spacing; row++) {
+      const y0 = bb.min.y + row * spacing * 0.866;
+      const xOff = (row % 2) * spacing * 0.5;
+      clipLineToPoly(new THREE.Vector2(bb.min.x - 10 + xOff, y0), new THREE.Vector2(bb.max.x + 10 + xOff, y0), poly).forEach(s => lines.push(s));
+      clipLineToPoly(new THREE.Vector2(bb.min.x - 10 + xOff + spacing/2, y0 + spacing * 0.433), new THREE.Vector2(bb.max.x + 10 + xOff + spacing/2, y0 + spacing * 0.433), poly).forEach(s => lines.push(s));
+    }
+  } else if (pattern === 'gyroid') {
+    const w = bb.max.x - bb.min.x;
+    const h = bb.max.y - bb.min.y;
+    const step = spacing;
+    for (let x = bb.min.x; x <= bb.max.x; x += step) {
+      const yOff = Math.sin(x * 0.5) * step * 0.5;
+      clipLineToPoly(new THREE.Vector2(x, bb.min.y - 10 + yOff), new THREE.Vector2(x, bb.max.y + 10 + yOff), poly).forEach(s => lines.push(s));
+    }
+    for (let y = bb.min.y; y <= bb.max.y; y += step) {
+      const xOff = Math.sin(y * 0.5) * step * 0.5;
+      clipLineToPoly(new THREE.Vector2(bb.min.x - 10 + xOff, y), new THREE.Vector2(bb.max.x + 10 + xOff, y), poly).forEach(s => lines.push(s));
     }
   }
   return lines;

@@ -32,10 +32,10 @@
   <!-- Main Content -->
   <div class="main">
     <!-- Left Sidebar -->
-    <div class="sidebar" style="width:280px;min-width:280px">
+    <div class="sidebar" style="width:300px;min-width:300px">
       <div class="sidebar-header">Settings</div>
       <div class="sidebar-scroll">
-        <!-- Models Section -->
+        <!-- Models -->
         <div class="section">
           <div class="section-title" data-section="models">Models</div>
           <div class="section-content" id="modelsContent">
@@ -44,11 +44,16 @@
               <button id="btnAddFiles" class="primary" style="flex:1">+ Add</button>
               <button id="btnClearAll" class="danger small" style="flex:0 0 50px">Clear</button>
             </div>
+            <div style="display:flex;gap:4px;margin-top:4px">
+              <button id="btnDuplicate" class="small" style="flex:1">Duplicate</button>
+              <button id="btnArrange" class="small" style="flex:1">Arrange</button>
+            </div>
             <input type="file" id="fileInput" accept=".stl,.obj,.ply,.3mf" multiple style="display:none">
+            <input type="hidden" id="printSpeed" value="60">
           </div>
         </div>
 
-        <!-- Mode Tabs -->
+        <!-- Mode -->
         <div class="section">
           <div class="tabs">
             <div class="tab active" data-mode="fdm">FDM</div>
@@ -62,42 +67,197 @@
           <div class="section-title" data-section="print">Print Settings</div>
           <div class="section-content" id="printContent">
             <div class="field-row">
-              <div><label>Layer</label><input type="number" id="layerHeight" value="0.2" step="0.05" min="0.05" title="Layer height (mm)"></div>
-              <div><label>Width</label><input type="number" id="lineWidth" value="0.4" step="0.05" min="0.1" title="Line width (mm)"></div>
+              <div><label>Layer</label><input type="number" id="layerHeight" value="0.2" step="0.05" min="0.05"></div>
+              <div><label>Width</label><input type="number" id="lineWidth" value="0.4" step="0.05" min="0.1"></div>
             </div>
             <div class="field">
               <label>Infill <span id="infillVal" class="text-accent">20%</span></label>
-              <input type="range" id="infill" min="0" max="100" value="20" step="5" title="Infill density">
+              <input type="range" id="infill" min="0" max="100" value="20" step="5">
             </div>
             <div class="field">
               <label>Pattern</label>
-              <select id="infillPattern" title="Infill pattern">
+              <select id="infillPattern">
                 <option value="lines">Lines</option>
                 <option value="zigzag">Zigzag</option>
                 <option value="grid">Grid</option>
                 <option value="triangles">Triangles</option>
                 <option value="honeycomb">Honeycomb</option>
+                <option value="cubic">Cubic</option>
+                <option value="octet">Octet</option>
+                <option value="gyroid">Gyroid</option>
               </select>
             </div>
+            <div class="field">
+              <label>Infill Anchor</label>
+              <select id="infillAnchor">
+                <option value="none">None</option>
+                <option value="perimeter">Perimeter</option>
+                <option value="grid">Grid</option>
+              </select>
+            </div>
+
+            <!-- Speeds -->
+            <div class="field-group">
+              <div class="field-group-title">Speeds (mm/s)</div>
+              <div class="field-row">
+                <div><label>Outer Wall</label><input type="number" id="speedOuter" value="30" step="5" min="5"></div>
+                <div><label>Inner Wall</label><input type="number" id="speedInner" value="50" step="5" min="5"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Infill</label><input type="number" id="speedInfill" value="60" step="5" min="5"></div>
+                <div><label>Top/Bottom</label><input type="number" id="speedTop" value="40" step="5" min="5"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Travel</label><input type="number" id="travelSpeed" value="120" step="5" min="10"></div>
+                <div><label>Initial Layer</label><input type="number" id="speedFirst" value="20" step="5" min="5"></div>
+              </div>
+            </div>
+
+            <!-- Temperatures -->
+            <div class="field-group">
+              <div class="field-group-title">Temperatures</div>
+              <div class="field-row">
+                <div><label>Nozzle</label><input type="number" id="nozzleTemp" value="200" step="5" min="150" max="300"></div>
+                <div><label>Bed</label><input type="number" id="bedTemp" value="60" step="5" min="0" max="120"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Chamber</label><input type="number" id="chamberTemp" value="0" step="5" min="0"></div>
+                <div><label>Cooling</label><input type="number" id="fanSpeed" value="100" min="0" max="100"></div>
+              </div>
+            </div>
+
+            <!-- Retraction -->
+            <div class="field-group">
+              <div class="field-group-title">Retraction</div>
+              <div class="field-row">
+                <div><label>Distance</label><input type="number" id="retraction" value="6" step="0.5" min="0" max="15"></div>
+                <div><label>Speed</label><input type="number" id="retractSpeed" value="40" step="5" min="5" max="100"></div>
+              </div>
+              <div class="field">
+                <label>Z-Hop (mm)</label>
+                <input type="number" id="zHop" value="0" step="0.1" min="0" max="5">
+              </div>
+              <div class="field">
+                <label>Extra Restart</label>
+                <input type="number" id="extraRestart" value="0" step="0.1" min="-2" max="2">
+              </div>
+            </div>
+
             <div class="field-row">
-              <div><label>Speed</label><input type="number" id="printSpeed" value="60" step="5" min="10" title="Print speed (mm/s)"></div>
-              <div><label>Travel</label><input type="number" id="travelSpeed" value="120" step="5" min="10" title="Travel speed (mm/s)"></div>
+              <div><label>Perims</label><input type="number" id="perimeters" value="2" min="1" max="10"></div>
+              <div><label>Bottom</label><input type="number" id="bottomLayers" value="3" min="0" max="20"></div>
             </div>
             <div class="field-row">
-              <div><label>Nozzle</label><input type="number" id="nozzleTemp" value="200" step="5" min="150" max="300" title="Nozzle temperature"></div>
-              <div><label>Bed</label><input type="number" id="bedTemp" value="60" step="5" min="0" max="120" title="Bed temperature"></div>
+              <div><label>Top</label><input type="number" id="topLayers" value="3" min="0" max="20"></div>
+              <div><label>Fan %</label><input type="number" id="fanSpeed" value="100" min="0" max="100"></div>
             </div>
-            <div class="field-row">
-              <div><label>Perims</label><input type="number" id="perimeters" value="2" min="1" max="10" title="Perimeters"></div>
-              <div><label>Bottom</label><input type="number" id="bottomLayers" value="3" min="0" max="20" title="Bottom layers"></div>
-            </div>
-            <div class="field-row">
-              <div><label>Top</label><input type="number" id="topLayers" value="3" min="0" max="20" title="Top layers"></div>
-              <div><label>Fan</label><input type="number" id="fanSpeed" value="100" min="0" max="100" title="Fan speed %"></div>
+          </div>
+        </div>
+
+        <!-- Support -->
+        <div class="section" id="supportSection">
+          <div class="section-title" data-section="support">Support</div>
+          <div class="section-content" id="supportContent">
+            <div class="field">
+              <label>Support Mode</label>
+              <select id="supportMode">
+                <option value="none">None</option>
+                <option value="touching">Touching Bed</option>
+                <option value="everywhere">Everywhere</option>
+              </select>
             </div>
             <div class="field">
-              <label>Retraction</label>
-              <input type="number" id="retraction" value="6" step="0.5" min="0" max="15" title="Retraction distance (mm)">
+              <label>Support Density <span id="supportDensityVal" class="text-accent">15%</span></label>
+              <input type="range" id="supportDensity" min="5" max="30" value="15" step="1">
+            </div>
+            <div class="field-row">
+              <div><label>Pattern</label>
+                <select id="supportPattern">
+                  <option value="lines">Lines</option>
+                  <option value="grid">Grid</option>
+                  <option value="triangles">Triangles</option>
+                </select>
+              </div>
+              <div><label>Angle</label><input type="number" id="supportAngle" value="50" step="5" min="0" max="90"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Z Distance</label><input type="number" id="supportZ" value="0.2" step="0.05" min="0.1"></div>
+              <div><label>XY Distance</label><input type="number" id="supportXY" value="0.8" step="0.1" min="0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Adhesion -->
+        <div class="section" id="adhesionSection">
+          <div class="section-title" data-section="adhesion">Adhesion</div>
+          <div class="section-content" id="adhesionContent">
+            <div class="field">
+              <label>Brim/Raft</label>
+              <select id="adhesionType">
+                <option value="none">None</option>
+                <option value="brim">Brim</option>
+                <option value="raft">Raft</option>
+                <option value="skirt">Skirt</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Brim Width (mm)</label>
+              <input type="number" id="brimWidth" value="5" step="1" min="0" max="20">
+            </div>
+            <div class="field">
+              <label>Skirt Count</label>
+              <input type="number" id="skirtCount" value="2" min="0" max="10">
+            </div>
+            <div class="field">
+              <label>Skirt Distance (mm)</label>
+              <input type="number" id="skirtDist" value="4" step="1" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced -->
+        <div class="section" id="advancedSection">
+          <div class="section-title" data-section="advanced">Advanced</div>
+          <div class="section-content" id="advancedContent">
+            <div class="field-group">
+              <div class="field-group-title">Pressure Advance / Flow</div>
+              <div class="field-row">
+                <div><label>Pressure Adv</label><input type="number" id="pressureAdv" value="0" step="0.01" min="0" max="0.2"></div>
+                <div><label>Flow %</label><input type="number" id="flowRate" value="100" step="1" min="50" max="150"></div>
+              </div>
+              <div class="field">
+                <label>Max Volumetric (mm³/s)</label>
+                <input type="number" id="maxVolumetric" value="12" step="1" min="1" max="50">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-group-title">Variable Layer Height</div>
+              <div class="field-row">
+                <div><label>Min Layer</label><input type="number" id="varLayerMin" value="0.1" step="0.05" min="0.05"></div>
+                <div><label>Max Layer</label><input type="number" id="varLayerMax" value="0.3" step="0.05" min="0.1"></div>
+              </div>
+              <div class="field">
+                <label>Layer Height Variation</label>
+                <select id="varLayerMode">
+                  <option value="none">None</option>
+                  <option value="coarse">Coarse (bottom)</option>
+                  <option value="fine">Fine (top)</option>
+                  <option value="auto">Auto</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-group-title">Cooling</div>
+              <div class="field-row">
+                <div><label>Min Fan</label><input type="number" id="fanMin" value="0" min="0" max="100"></div>
+                <div><label>Max Fan</label><input type="number" id="fanMax" value="100" min="0" max="100"></div>
+              </div>
+              <div class="field">
+                <label>Fan Threshold (C)</label>
+                <input type="number" id="fanThreshold" value="100" step="5" min="0">
+              </div>
             </div>
           </div>
         </div>
@@ -106,21 +266,26 @@
         <div class="section hidden" id="laserSection">
           <div class="section-title" data-section="laser">Laser</div>
           <div class="section-content" id="laserContent">
-            <div class="field-row">
-              <div><label>Power</label><input type="number" id="laserPower" value="10" step="1" min="1" max="100"></div>
-              <div><label>Speed</label><input type="number" id="laserSpeed" value="1000" step="50" min="50"></div>
-            </div>
-            <div class="field">
-              <label>Passes</label>
-              <input type="number" id="laserPasses" value="1" min="1" max="10">
-            </div>
-            <div class="field">
-              <label>Mode</label>
-              <select id="laserMode">
-                <option value="engrave">Engrave</option>
-                <option value="cut">Cut</option>
-                <option value="vector">Vector</option>
-              </select>
+            <div class="field-group">
+              <div class="field-group-title">Laser</div>
+              <div class="field-row">
+                <div><label>Power (W)</label><input type="number" id="laserPower" value="10" step="1" min="1" max="100"></div>
+                <div><label>Speed</label><input type="number" id="laserSpeed" value="1000" step="50" min="50"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Passes</label><input type="number" id="laserPasses" value="1" min="1" max="10"></div>
+                <div><label>Mode</label>
+                  <select id="laserMode">
+                    <option value="engrave">Engrave</option>
+                    <option value="cut">Cut</option>
+                    <option value="vector">Vector</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label>PWM Max</label>
+                <input type="number" id="laserPWM" value="255" min="0" max="255">
+              </div>
             </div>
           </div>
         </div>
@@ -129,26 +294,27 @@
         <div class="section hidden" id="cncSection">
           <div class="section-title" data-section="cnc">CNC</div>
           <div class="section-content" id="cncContent">
-            <div class="field-row">
-              <div><label>Spindle</label><input type="number" id="spindleSpeed" value="12000" step="500" min="0"></div>
-              <div><label>Feed</label><input type="number" id="feedRate" value="800" step="50" min="10"></div>
-            </div>
-            <div class="field-row">
-              <div><label>Plunge</label><input type="number" id="plungeRate" value="200" step="10" min="10"></div>
-              <div><label>Depth</label><input type="number" id="depthPerPass" value="1.5" step="0.1" min="0.1"></div>
-            </div>
-            <div class="field">
-              <label>Tool Dia</label>
-              <input type="number" id="toolDiameter" value="3.175" step="0.1" min="0.1">
-            </div>
-            <div class="field">
-              <label>Operation</label>
-              <select id="cncOp">
-                <option value="drill">Drill Holes</option>
-                <option value="pocket">Pocket</option>
-                <option value="contour">Contour</option>
-                <option value="drill_contour">Drill + Contour</option>
-              </select>
+            <div class="field-group">
+              <div class="field-group-title">Spindle</div>
+              <div class="field-row">
+                <div><label>RPM</label><input type="number" id="spindleSpeed" value="12000" step="500" min="0"></div>
+                <div><label>Feed</label><input type="number" id="feedRate" value="800" step="50" min="10"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Plunge</label><input type="number" id="plungeRate" value="200" step="10" min="10"></div>
+                <div><label>Depth</label><input type="number" id="depthPerPass" value="1.5" step="0.1" min="0.1"></div>
+              </div>
+              <div class="field-row">
+                <div><label>Tool Dia</label><input type="number" id="toolDiameter" value="3.175" step="0.1" min="0.1"></div>
+                <div><label>Op</label>
+                  <select id="cncOp">
+                    <option value="drill">Drill</option>
+                    <option value="pocket">Pocket</option>
+                    <option value="contour">Contour</option>
+                    <option value="drill_contour">Drill+Contour</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -187,20 +353,24 @@
               <div><label>Pos X</label><input type="number" id="posX" value="0" step="1"></div>
               <div><label>Pos Y</label><input type="number" id="posY" value="0" step="1"></div>
             </div>
-            <button id="btnApplyTransform" class="primary" style="width:100%;margin-top:6px">Apply</button>
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <button id="btnApplyTransform" class="primary" style="flex:1">Apply</button>
+              <button id="btnUndo" class="small" disabled>Undo</button>
+              <button id="btnRedo" class="small" disabled>Redo</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Viewport -->
+    <!-- Viewer -->
     <div class="viewer">
       <div id="viewer3d"></div>
 
       <div class="viewer-toolbar">
-        <button id="viewTop" title="Top">Top</button>
-        <button id="viewFront" title="Front">Front</button>
-        <button id="viewSide" title="Side">Side</button>
+        <button id="viewTop" title="Top view">Top</button>
+        <button id="viewFront" title="Front view">Front</button>
+        <button id="viewSide" title="Side view">Side</button>
         <button id="viewIso" title="Isometric" class="active">Iso</button>
         <button id="toggleGrid" class="active">Grid</button>
         <button id="toggleAxes" class="active">Axes</button>
@@ -213,6 +383,7 @@
         <div style="margin-top:2px">Models: <span class="value" id="modelCount">0</span></div>
         <div style="margin-top:2px">Sel: <span class="value" id="selectedName">None</span></div>
         <div style="margin-top:2px">Layers: <span class="value" id="layerCount">0</span></div>
+        <div style="margin-top:2px">Est: <span class="value" id="estTime">--</span></div>
       </div>
 
       <div class="viewer-actions">
@@ -222,8 +393,13 @@
       <div class="drop-overlay" id="dropZone">
         <div class="drop-box">
           <h3>Drop 3D files</h3>
-          <p>STL, OBJ, PLY</p>
+          <p>STL, OBJ, PLY supported</p>
         </div>
+      </div>
+
+      <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-percent" id="progressPercent">0%</div>
+        <div class="progress-text" id="progressText">Slicing...</div>
       </div>
     </div>
 
@@ -241,6 +417,46 @@
           </div>
           <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
         </div>
+
+        <div class="section">
+          <div class="section-title" data-section="stats">Statistics</div>
+          <div class="section-content" id="statsContent">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Print Time</div>
+                <div class="stat-value" id="statTime">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Filament</div>
+                <div class="stat-value" id="statFilament">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Layers</div>
+                <div class="stat-value" id="statLayers">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Triangles</div>
+                <div class="stat-value" id="statTris">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title" data-section="gcodeInfo">G-code Info</div>
+          <div class="section-content" id="gcodeInfoContent">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Size</div>
+                <div class="stat-value" id="gcodeSize">--</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Commands</div>
+                <div class="stat-value" id="gcodeCmds">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -251,6 +467,9 @@
     <span><span class="status-mode" id="statusMode">FDM</span> <span class="status-text" id="statusText">Ready</span></span>
   </div>
 </div>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="context-menu" id="contextMenu" style="display:none"></div>
 
 <script type="module">
 import { initApp } from './js/app.js';

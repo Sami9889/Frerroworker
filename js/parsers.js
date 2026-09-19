@@ -94,6 +94,27 @@ export function parsePLY(buffer) {
   return geom;
 }
 
+export function parse3MF(buffer) {
+  try {
+    const text = new TextDecoder().decode(buffer);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'application/xml');
+    const vertices = doc.querySelectorAll('vertex');
+    const positions = [];
+    vertices.forEach(v => {
+      const x = parseFloat(v.getAttribute('x'));
+      const y = parseFloat(v.getAttribute('y'));
+      const z = parseFloat(v.getAttribute('z'));
+      if (!isNaN(x) && !isNaN(y) && !isNaN(z)) positions.push(x, y, z);
+    });
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    return geom;
+  } catch (e) {
+    throw new Error('3MF parsing failed: ' + e.message);
+  }
+}
+
 export function detectSTLType(buffer) {
   const view = new DataView(buffer, 80, 4);
   const faceCount = view.getUint32(0, true);
@@ -127,6 +148,14 @@ export function loadGeometry(file) {
         const reader = new FileReader();
         reader.onload = () => {
           try { resolve({ geometry: parsePLY(reader.result), name: file.name }); }
+          catch (e) { reject(e); }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(file);
+      } else if (ext === '3mf') {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try { resolve({ geometry: parse3MF(reader.result), name: file.name }); }
           catch (e) { reject(e); }
         };
         reader.onerror = () => reject(reader.error);

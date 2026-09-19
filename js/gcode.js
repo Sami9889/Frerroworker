@@ -31,6 +31,10 @@ function generateFDMGcode(lines, layers, s) {
   lines.push('M190 S' + s.bedTemp + ' ; wait for bed');
   lines.push('M104 S' + s.nozzleTemp + ' ; set hotend temp');
   lines.push('M109 S' + s.nozzleTemp + ' ; wait for hotend');
+  if (s.chamberTemp > 0) {
+    lines.push('M141 S' + s.chamberTemp + ' ; set chamber temp');
+    lines.push('M191 S' + s.chamberTemp + ' ; wait for chamber');
+  }
   lines.push('G28 ; home all axes');
   lines.push('G29 ; auto bed level (if equipped)');
   lines.push('G1 Z5 F3000 ; lift nozzle');
@@ -44,6 +48,10 @@ function generateFDMGcode(lines, layers, s) {
   }
   lines.push('G1 Z' + s.layerHeight.toFixed(2) + ' F3000');
   lines.push('M106 S' + Math.round(s.fanSpeed * 2.55) + ' ; fan on');
+
+  if (s.pressureAdv > 0) {
+    lines.push('M900 K' + s.pressureAdv.toFixed(3) + ' ; pressure advance');
+  }
 
   let ePos = 0;
   for (let l = 0; l < layers.length; l++) {
@@ -59,17 +67,17 @@ function generateFDMGcode(lines, layers, s) {
         if (pts.length < 3) continue;
         lines.push('G0 X' + pts[0].x.toFixed(3) + ' Y' + pts[0].y.toFixed(3) + ' F' + (s.travelSpeed * 60));
         for (let i = 1; i < pts.length; i++) {
-          ePos += calcExtrusion(pts[i-1], pts[i], s.lineWidth, s.layerHeight);
+          ePos += calcExtrusion(pts[i-1], pts[i], s.lineWidth, s.layerHeight, s.flowRate);
           lines.push('G1 X' + pts[i].x.toFixed(3) + ' Y' + pts[i].y.toFixed(3) + ' E' + ePos.toFixed(5) + ' F' + (s.printSpeed * 60));
         }
-        ePos += calcExtrusion(pts[pts.length-1], pts[0], s.lineWidth, s.layerHeight);
+        ePos += calcExtrusion(pts[pts.length-1], pts[0], s.lineWidth, s.layerHeight, s.flowRate);
         lines.push('G1 X' + pts[0].x.toFixed(3) + ' Y' + pts[0].y.toFixed(3) + ' E' + ePos.toFixed(5));
       }
       if (s.infill > 0) {
         const infill = generateInfill(poly, s.lineWidth, s.infill / 100, s.infillPattern);
         infill.forEach(seg => {
           lines.push('G0 X' + seg[0].x.toFixed(3) + ' Y' + seg[0].y.toFixed(3) + ' F' + (s.travelSpeed * 60));
-          ePos += calcExtrusion(seg[0], seg[1], s.lineWidth, s.layerHeight);
+          ePos += calcExtrusion(seg[0], seg[1], s.lineWidth, s.layerHeight, s.flowRate);
           lines.push('G1 X' + seg[1].x.toFixed(3) + ' Y' + seg[1].y.toFixed(3) + ' E' + ePos.toFixed(5) + ' F' + (s.printSpeed * 60));
         });
       }
@@ -99,9 +107,9 @@ function generateLaserGcode(lines, layers, s) {
       for (const poly of layer.polygons) {
         if (poly.length < 3) continue;
         lines.push('G0 X' + poly[0].x.toFixed(3) + ' Y' + poly[0].y.toFixed(3) + ' F' + s.laserSpeed);
-        const pwm = s.laserMode === 'cut' ? Math.min(255, Math.round(s.laserPower * 2.55)) :
-                    s.laserMode === 'engrave' ? Math.min(255, Math.round(s.laserPower * 1.5)) :
-                    Math.min(255, Math.round(s.laserPower * 2.55));
+        const pwm = s.laserMode === 'cut' ? Math.min(s.laserPWM, Math.round(s.laserPower * 2.55)) :
+                    s.laserMode === 'engrave' ? Math.min(s.laserPWM, Math.round(s.laserPower * 1.5)) :
+                    Math.min(s.laserPWM, Math.round(s.laserPower * 2.55));
         lines.push('M3 S' + pwm);
         for (let i = 1; i < poly.length; i++) lines.push('G1 X' + poly[i].x.toFixed(3) + ' Y' + poly[i].y.toFixed(3) + ' F' + s.laserSpeed);
         lines.push('M5');
@@ -139,9 +147,10 @@ function generateCNCGcode(lines, layers, s) {
   lines.push('M2');
 }
 
-function calcExtrusion(a, b, lineWidth, layerHeight) {
+function calcExtrusion(a, b, lineWidth, layerHeight, flowRate) {
   const dist = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
-  return dist * lineWidth * layerHeight * 0.05;
+  const flow = (flowRate || 100) / 100;
+  return dist * lineWidth * layerHeight * 0.05 * flow;
 }
 
 function offsetPolygon(poly, offset) {
