@@ -1,9 +1,9 @@
 'use strict';
 
 import * as THREE from 'three';
-import { init as initViewer, addToScene, removeFromScene, clearGroup, fitCameraToObjects, disposeMesh, getSliceGroup, getPreviewGroup, getGrid, getAxes } from './viewer.js';
+import { init as initViewer, addToScene, clearGroup, fitCameraToObjects, disposeMesh, getPreviewGroup, getGrid, getAxes } from './viewer.js';
 import { loadGeometry } from './parsers.js';
-import { sliceModels, offsetPolygon, generateInfill } from './slicer.js';
+import { sliceModels } from './slicer.js';
 import { generateGcode } from './gcode.js';
 
 const STATE = {
@@ -12,11 +12,10 @@ const STATE = {
   selectedId: null,
   nextId: 1,
   layers: [],
-  sliced: false,
-  settings: {}
+  sliced: false
 };
 
-const MODE_COLORS = { fdm: 0xcccccc, laser: 0xb5451b, cnc: 0x858585 };
+const MODE_COLORS = { fdm: 0xb8b8b8, laser: 0xb5451b, cnc: 0x858585 };
 
 let appCamera = null;
 
@@ -24,21 +23,10 @@ export function initApp() {
   const viewer = initViewer('viewer3d');
   appCamera = viewer.camera;
 
-  STATE.settings = getSettingsFromDOM();
-
   setupEventListeners();
   setupDragDrop();
+  setupCollapsibles();
   updateModelList();
-}
-
-function getSettingsFromDOM() {
-  return {
-    layerHeight: 0.2, lineWidth: 0.4, infill: 20, infillPattern: 'lines',
-    printSpeed: 60, travelSpeed: 120, nozzleTemp: 200, bedTemp: 60,
-    perimeters: 2, bottomLayers: 3, topLayers: 3, fanSpeed: 100, retraction: 6,
-    laserPower: 10, laserSpeed: 1000, laserPasses: 1, laserMode: 'engrave',
-    spindleSpeed: 12000, feedRate: 800, plungeRate: 200, depthPerPass: 1.5, toolDiameter: 3.175, cncOp: 'contour'
-  };
 }
 
 function setupEventListeners() {
@@ -64,10 +52,11 @@ function setupEventListeners() {
   document.getElementById('layerSlider').addEventListener('input', e => showLayer(parseInt(e.target.value)));
   document.getElementById('modelScale').addEventListener('input', e => document.getElementById('scaleVal').textContent = e.target.value + '%');
   document.getElementById('infill').addEventListener('input', e => document.getElementById('infillVal').textContent = e.target.value + '%');
+  document.getElementById('btnLoadViewer').addEventListener('click', () => document.getElementById('fileInput').click());
 
-  document.getElementById('viewTop').addEventListener('click', () => { viewerNavigate([0, 500, 0.01], [0, 0, 0]); });
-  document.getElementById('viewFront').addEventListener('click', () => { viewerNavigate([0, 0, 500], [0, 0, 0]); });
-  document.getElementById('viewSide').addEventListener('click', () => { viewerNavigate([500, 0, 0.01], [0, 0, 0]); });
+  document.getElementById('viewTop').addEventListener('click', () => navigateCamera([0, 500, 0.01], [0, 0, 0]));
+  document.getElementById('viewFront').addEventListener('click', () => navigateCamera([0, 0, 500], [0, 0, 0]));
+  document.getElementById('viewSide').addEventListener('click', () => navigateCamera([500, 0, 0.01], [0, 0, 0]));
   document.getElementById('viewIso').addEventListener('click', fitView);
   document.getElementById('toggleGrid').addEventListener('click', function() { getGrid().visible = !getGrid().visible; this.classList.toggle('active'); });
   document.getElementById('toggleAxes').addEventListener('click', function() { getAxes().visible = !getAxes().visible; this.classList.toggle('active'); });
@@ -77,7 +66,19 @@ function setupEventListeners() {
   setupViewerInteraction();
 }
 
-function viewerNavigate(pos, target) {
+function setupCollapsibles() {
+  document.querySelectorAll('.section-title').forEach(title => {
+    title.addEventListener('click', () => {
+      const section = title.dataset.section;
+      const content = document.getElementById(section + 'Content');
+      if (!content) return;
+      title.classList.toggle('collapsed');
+      content.classList.toggle('collapsed');
+    });
+  });
+}
+
+function navigateCamera(pos, target) {
   appCamera.position.set(pos[0], pos[1], pos[2]);
   appCamera.lookAt(target[0], target[1], target[2]);
 }
@@ -123,7 +124,7 @@ function setupViewerInteraction() {
   el.addEventListener('wheel', e => {
     e.preventDefault();
     const factor = 1 + e.deltaY * 0.001;
-    window.appCamera.position.multiplyScalar(factor);
+    appCamera.position.multiplyScalar(factor);
   }, { passive: false });
 }
 
@@ -139,10 +140,18 @@ function setupDragDrop() {
 
 function setMode(mode) {
   STATE.mode = mode;
-  document.getElementById('modeBadge').textContent = mode === 'fdm' ? '3D PRINT' : mode === 'laser' ? 'LASER' : 'CNC';
+  const badge = document.getElementById('modeBadge');
+  badge.textContent = mode === 'fdm' ? '3D PRINT' : mode === 'laser' ? 'LASER' : 'CNC';
+  badge.className = 'menu-mode ' + mode;
+
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
-  document.getElementById('laserSection').style.display = mode === 'laser' ? 'block' : 'none';
-  document.getElementById('cncSection').style.display = mode === 'cnc' ? 'block' : 'none';
+  document.getElementById('printSection').classList.toggle('hidden', mode !== 'fdm');
+  document.getElementById('laserSection').classList.toggle('hidden', mode !== 'laser');
+  document.getElementById('cncSection').classList.toggle('hidden', mode !== 'cnc');
+
+  const statusMode = document.getElementById('statusMode');
+  statusMode.textContent = mode === 'fdm' ? 'FDM' : mode === 'laser' ? 'LASER' : 'CNC';
+
   STATE.models.forEach(m => { if (m.mesh && m.mesh.material) m.mesh.material.color.setHex(MODE_COLORS[mode] || MODE_COLORS.fdm); });
 }
 
@@ -180,18 +189,17 @@ function addModelToScene(geometry, name) {
 
   const size = new THREE.Vector3();
   geometry.boundingBox.getSize(size);
-  log('Loaded ' + name + ' (' + size.x.toFixed(1) + ' x ' + size.y.toFixed(1) + ' x ' + size.z.toFixed(1) + ' mm)', 'info');
+  log('Loaded ' + name + ' (' + size.x.toFixed(1) + '×' + size.y.toFixed(1) + '×' + size.z.toFixed(1) + ' mm)', 'info');
   updateModelList();
   updateInfo();
   enableActions();
   fitView();
-  log(STATE.models.length + ' model(s) in scene', 'info');
 }
 
 function updateModelList() {
   const list = document.getElementById('modelList');
   list.innerHTML = '';
-  list.style.display = STATE.models.length ? 'block' : 'none';
+  list.classList.toggle('hidden', !STATE.models.length);
   STATE.models.forEach(m => {
     const item = document.createElement('div');
     item.className = 'model-item' + (m.id === STATE.selectedId ? ' selected' : '');
@@ -199,7 +207,7 @@ function updateModelList() {
       '<span class="name" data-id="' + m.id + '">' + m.name + '</span>' +
       '<button class="rm" data-id="' + m.id + '">×</button>';
 
-    item.querySelector('.vis').addEventListener('click', e => { e.stopPropagation(); toggleModelVisibility(m.id); });
+    item.querySelector('.vis').addEventListener('click', e => { e.stopPropagation(); toggleVisibility(m.id); });
     item.querySelector('.name').addEventListener('click', () => selectModel(m.id));
     item.querySelector('.rm').addEventListener('click', e => { e.stopPropagation(); removeModel(m.id); });
     list.appendChild(item);
@@ -207,7 +215,7 @@ function updateModelList() {
   updateInfo();
 }
 
-function toggleModelVisibility(id) {
+function toggleVisibility(id) {
   const m = STATE.models.find(x => x.id === id);
   if (!m) return;
   m.visible = !m.visible;
@@ -281,7 +289,7 @@ function sliceCurrent() {
   document.getElementById('btnShowLayer').disabled = false;
   setProgress(100);
   const totalContours = STATE.layers.reduce((s, l) => s + l.polygons.length, 0);
-  log('Slice complete: ' + STATE.layers.length + ' layers, ' + totalContours + ' contours', 'info');
+  log('Done: ' + STATE.layers.length + ' layers, ' + totalContours + ' contours', 'info');
   updateInfo();
 }
 
@@ -299,7 +307,7 @@ function showLayer(idx) {
     if (poly.length < 2) return;
     const pts = poly.map(p => new THREE.Vector3(p.x, p.y, layer.z));
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineBasicMaterial({ color: 0xb5451b });
+    const mat = new THREE.LineBasicMaterial({ color: 0xff9d00 });
     getPreviewGroup().add(new THREE.Line(geom, mat));
   });
   document.getElementById('layerLabel').textContent = (idx + 1) + '/' + STATE.layers.length;
@@ -366,7 +374,6 @@ function disableActions() {
   ['btnSlice', 'btnPreview', 'btnDownload', 'btnShowLayer'].forEach(id => document.getElementById(id).disabled = true);
 }
 function clearPreview() {
-  clearGroup(getSliceGroup());
   clearGroup(getPreviewGroup());
   STATE.layers = [];
   STATE.sliced = false;

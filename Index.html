@@ -18,211 +18,237 @@
 </head>
 <body>
 <div class="app">
-  <!-- Left Panel -->
-  <div class="panel panel-left">
-    <div class="panel-header">
-      <h1>FERROWORKER <span class="mode-badge" id="modeBadge">3D PRINT</span></h1>
-    </div>
-    <div class="panel-scroll">
-      <!-- Models -->
-      <div class="section">
-        <div class="section-title">Models</div>
-        <div id="modelList" class="model-list" style="display:none"></div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button id="btnAddFiles" class="primary" style="flex:1">+ Add Files</button>
-          <button id="btnClearAll" class="danger" style="flex:1">Clear</button>
-        </div>
-        <input type="file" id="fileInput" accept=".stl,.obj,.ply,.3mf" multiple style="display:none">
-      </div>
+  <!-- Top Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-logo">FERROWORKER</div>
+    <button class="menu-item" data-action="file">File</button>
+    <button class="menu-item" data-action="edit">Edit</button>
+    <button class="menu-item" data-action="view">View</button>
+    <button class="menu-item" data-action="help">Help</button>
+    <div class="menu-spacer"></div>
+    <span class="menu-mode fdm" id="modeBadge">3D PRINT</span>
+  </div>
 
-      <!-- Mode -->
-      <div class="section">
-        <div class="section-title">Process Mode</div>
-        <div class="tabs">
-          <div class="tab active" data-mode="fdm">FDM Print</div>
-          <div class="tab" data-mode="laser">Laser</div>
-          <div class="tab" data-mode="cnc">CNC</div>
-        </div>
-      </div>
-
-      <!-- Print Settings -->
-      <div class="section" id="printSection">
-        <div class="section-title">Print Settings</div>
-        <div class="field-row">
-          <div><label>Layer Height</label><input type="number" id="layerHeight" value="0.2" step="0.05" min="0.05"></div>
-          <div><label>Line Width</label><input type="number" id="lineWidth" value="0.4" step="0.05" min="0.1"></div>
-        </div>
-        <div class="field">
-          <label>Infill <span id="infillVal" style="color:var(--accent)">20%</span></label>
-          <input type="range" id="infill" min="0" max="100" value="20" step="5">
-        </div>
-        <div class="field">
-          <label>Infill Pattern</label>
-          <select id="infillPattern">
-            <option value="lines">Lines</option>
-            <option value="zigzag">Zigzag</option>
-            <option value="grid">Grid</option>
-            <option value="triangles">Triangles</option>
-            <option value="honeycomb">Honeycomb</option>
-          </select>
-        </div>
-        <div class="field-row">
-          <div><label>Print Speed</label><input type="number" id="printSpeed" value="60" step="5" min="10"></div>
-          <div><label>Travel Speed</label><input type="number" id="travelSpeed" value="120" step="5" min="10"></div>
-        </div>
-        <div class="field-row">
-          <div><label>Nozzle Temp (C)</label><input type="number" id="nozzleTemp" value="200" step="5" min="150" max="300"></div>
-          <div><label>Bed Temp (C)</label><input type="number" id="bedTemp" value="60" step="5" min="0" max="120"></div>
-        </div>
-        <div class="field-row">
-          <div><label>Perimeters</label><input type="number" id="perimeters" value="2" min="1" max="10"></div>
-          <div><label>Bottom Layers</label><input type="number" id="bottomLayers" value="3" min="0" max="20"></div>
-        </div>
-        <div class="field-row">
-          <div><label>Top Layers</label><input type="number" id="topLayers" value="3" min="0" max="20"></div>
-          <div><label>Fan Speed %</label><input type="number" id="fanSpeed" value="100" min="0" max="100"></div>
-        </div>
-        <div class="field">
-          <label>Retraction (mm)</label>
-          <input type="number" id="retraction" value="6" step="0.5" min="0" max="15">
-        </div>
-      </div>
-
-      <!-- Laser Settings -->
-      <div class="section" id="laserSection" style="display:none">
-        <div class="section-title">Laser Settings</div>
-        <div class="field-row">
-          <div><label>Power (W)</label><input type="number" id="laserPower" value="10" step="1" min="1" max="100"></div>
-          <div><label>Speed (mm/min)</label><input type="number" id="laserSpeed" value="1000" step="50" min="50"></div>
-        </div>
-        <div class="field">
-          <label>Passes</label>
-          <input type="number" id="laserPasses" value="1" min="1" max="10">
-        </div>
-        <div class="field">
-          <label>Mode</label>
-          <select id="laserMode">
-            <option value="engrave">Engrave</option>
-            <option value="cut">Cut</option>
-            <option value="vector">Vector</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- CNC Settings -->
-      <div class="section" id="cncSection" style="display:none">
-        <div class="section-title">CNC Settings</div>
-        <div class="field-row">
-          <div><label>Spindle (RPM)</label><input type="number" id="spindleSpeed" value="12000" step="500" min="0"></div>
-          <div><label>Feed (mm/min)</label><input type="number" id="feedRate" value="800" step="50" min="10"></div>
-        </div>
-        <div class="field-row">
-          <div><label>Plunge Rate</label><input type="number" id="plungeRate" value="200" step="10" min="10"></div>
-          <div><label>Depth/pass</label><input type="number" id="depthPerPass" value="1.5" step="0.1" min="0.1"></div>
-        </div>
-        <div class="field">
-          <label>Tool Diameter (mm)</label>
-          <input type="number" id="toolDiameter" value="3.175" step="0.1" min="0.1">
-        </div>
-        <div class="field">
-          <label>Operation</label>
-          <select id="cncOp">
-            <option value="drill">Drill Holes</option>
-            <option value="pocket">Pocket</option>
-            <option value="contour">Contour</option>
-            <option value="drill_contour">Drill + Contour</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="section">
-        <div class="section-title">Actions</div>
-        <div style="display:flex;gap:6px">
-          <button id="btnSlice" class="primary" disabled style="flex:1">Slice</button>
-          <button id="btnPreview" disabled style="flex:1">Preview</button>
-          <button id="btnDownload" disabled style="flex:1">Download</button>
-        </div>
-        <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
-        <div class="log" id="log" style="display:none"></div>
-        <div class="gcode-preview" id="gcodePreview" style="display:none"></div>
-      </div>
-
-      <!-- Transform -->
-      <div class="section">
-        <div class="section-title">Transform Selected</div>
-        <div class="field">
-          <label>Scale (%)</label>
-          <div class="slider-row">
-            <input type="range" id="modelScale" min="10" max="500" value="100" step="1">
-            <span class="slider-val" id="scaleVal">100%</span>
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Left Sidebar -->
+    <div class="sidebar" style="width:280px;min-width:280px">
+      <div class="sidebar-header">Settings</div>
+      <div class="sidebar-scroll">
+        <!-- Models Section -->
+        <div class="section">
+          <div class="section-title" data-section="models">Models</div>
+          <div class="section-content" id="modelsContent">
+            <div id="modelList" class="model-list hidden"></div>
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <button id="btnAddFiles" class="primary" style="flex:1">+ Add</button>
+              <button id="btnClearAll" class="danger small" style="flex:0 0 50px">Clear</button>
+            </div>
+            <input type="file" id="fileInput" accept=".stl,.obj,.ply,.3mf" multiple style="display:none">
           </div>
         </div>
-        <div class="field-row">
-          <div><label>Rotate X</label><input type="number" id="rotX" value="0" step="5"></div>
-          <div><label>Rotate Z</label><input type="number" id="rotZ" value="0" step="5"></div>
+
+        <!-- Mode Tabs -->
+        <div class="section">
+          <div class="tabs">
+            <div class="tab active" data-mode="fdm">FDM</div>
+            <div class="tab" data-mode="laser">Laser</div>
+            <div class="tab" data-mode="cnc">CNC</div>
+          </div>
         </div>
-        <div class="field-row">
-          <div><label>Move X</label><input type="number" id="posX" value="0" step="1"></div>
-          <div><label>Move Y</label><input type="number" id="posY" value="0" step="1"></div>
+
+        <!-- Print Settings -->
+        <div class="section" id="printSection">
+          <div class="section-title" data-section="print">Print Settings</div>
+          <div class="section-content" id="printContent">
+            <div class="field-row">
+              <div><label>Layer</label><input type="number" id="layerHeight" value="0.2" step="0.05" min="0.05" title="Layer height (mm)"></div>
+              <div><label>Width</label><input type="number" id="lineWidth" value="0.4" step="0.05" min="0.1" title="Line width (mm)"></div>
+            </div>
+            <div class="field">
+              <label>Infill <span id="infillVal" class="text-accent">20%</span></label>
+              <input type="range" id="infill" min="0" max="100" value="20" step="5" title="Infill density">
+            </div>
+            <div class="field">
+              <label>Pattern</label>
+              <select id="infillPattern" title="Infill pattern">
+                <option value="lines">Lines</option>
+                <option value="zigzag">Zigzag</option>
+                <option value="grid">Grid</option>
+                <option value="triangles">Triangles</option>
+                <option value="honeycomb">Honeycomb</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <div><label>Speed</label><input type="number" id="printSpeed" value="60" step="5" min="10" title="Print speed (mm/s)"></div>
+              <div><label>Travel</label><input type="number" id="travelSpeed" value="120" step="5" min="10" title="Travel speed (mm/s)"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Nozzle</label><input type="number" id="nozzleTemp" value="200" step="5" min="150" max="300" title="Nozzle temperature"></div>
+              <div><label>Bed</label><input type="number" id="bedTemp" value="60" step="5" min="0" max="120" title="Bed temperature"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Perims</label><input type="number" id="perimeters" value="2" min="1" max="10" title="Perimeters"></div>
+              <div><label>Bottom</label><input type="number" id="bottomLayers" value="3" min="0" max="20" title="Bottom layers"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Top</label><input type="number" id="topLayers" value="3" min="0" max="20" title="Top layers"></div>
+              <div><label>Fan</label><input type="number" id="fanSpeed" value="100" min="0" max="100" title="Fan speed %"></div>
+            </div>
+            <div class="field">
+              <label>Retraction</label>
+              <input type="number" id="retraction" value="6" step="0.5" min="0" max="15" title="Retraction distance (mm)">
+            </div>
+          </div>
         </div>
-        <button id="btnApplyTransform" class="primary" style="width:100%">Apply Transform</button>
+
+        <!-- Laser Settings -->
+        <div class="section hidden" id="laserSection">
+          <div class="section-title" data-section="laser">Laser</div>
+          <div class="section-content" id="laserContent">
+            <div class="field-row">
+              <div><label>Power</label><input type="number" id="laserPower" value="10" step="1" min="1" max="100"></div>
+              <div><label>Speed</label><input type="number" id="laserSpeed" value="1000" step="50" min="50"></div>
+            </div>
+            <div class="field">
+              <label>Passes</label>
+              <input type="number" id="laserPasses" value="1" min="1" max="10">
+            </div>
+            <div class="field">
+              <label>Mode</label>
+              <select id="laserMode">
+                <option value="engrave">Engrave</option>
+                <option value="cut">Cut</option>
+                <option value="vector">Vector</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- CNC Settings -->
+        <div class="section hidden" id="cncSection">
+          <div class="section-title" data-section="cnc">CNC</div>
+          <div class="section-content" id="cncContent">
+            <div class="field-row">
+              <div><label>Spindle</label><input type="number" id="spindleSpeed" value="12000" step="500" min="0"></div>
+              <div><label>Feed</label><input type="number" id="feedRate" value="800" step="50" min="10"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Plunge</label><input type="number" id="plungeRate" value="200" step="10" min="10"></div>
+              <div><label>Depth</label><input type="number" id="depthPerPass" value="1.5" step="0.1" min="0.1"></div>
+            </div>
+            <div class="field">
+              <label>Tool Dia</label>
+              <input type="number" id="toolDiameter" value="3.175" step="0.1" min="0.1">
+            </div>
+            <div class="field">
+              <label>Operation</label>
+              <select id="cncOp">
+                <option value="drill">Drill Holes</option>
+                <option value="pocket">Pocket</option>
+                <option value="contour">Contour</option>
+                <option value="drill_contour">Drill + Contour</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+          <div class="section-title" data-section="actions">Actions</div>
+          <div class="section-content" id="actionsContent">
+            <div style="display:flex;gap:4px">
+              <button id="btnSlice" class="primary" disabled style="flex:1">Slice</button>
+              <button id="btnPreview" disabled style="flex:1">Preview</button>
+            </div>
+            <button id="btnDownload" disabled class="mt-6" style="width:100%">Download G-code</button>
+            <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="log" id="log" style="display:none"></div>
+            <div class="gcode-preview" id="gcodePreview" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- Transform -->
+        <div class="section">
+          <div class="section-title" data-section="transform">Transform</div>
+          <div class="section-content" id="transformContent">
+            <div class="field">
+              <label>Scale</label>
+              <div class="slider-row">
+                <input type="range" id="modelScale" min="10" max="500" value="100" step="1">
+                <span class="slider-val" id="scaleVal">100%</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><label>Rot X</label><input type="number" id="rotX" value="0" step="5"></div>
+              <div><label>Rot Z</label><input type="number" id="rotZ" value="0" step="5"></div>
+            </div>
+            <div class="field-row">
+              <div><label>Pos X</label><input type="number" id="posX" value="0" step="1"></div>
+              <div><label>Pos Y</label><input type="number" id="posY" value="0" step="1"></div>
+            </div>
+            <button id="btnApplyTransform" class="primary" style="width:100%;margin-top:6px">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Viewport -->
+    <div class="viewer">
+      <div id="viewer3d"></div>
+
+      <div class="viewer-toolbar">
+        <button id="viewTop" title="Top">Top</button>
+        <button id="viewFront" title="Front">Front</button>
+        <button id="viewSide" title="Side">Side</button>
+        <button id="viewIso" title="Isometric" class="active">Iso</button>
+        <button id="toggleGrid" class="active">Grid</button>
+        <button id="toggleAxes" class="active">Axes</button>
+        <button id="toggleWireframe">Wire</button>
+        <button id="centerModel">Center</button>
+      </div>
+
+      <div class="viewer-info">
+        <div>Vol: <span class="value">1000×1000×1000 mm</span></div>
+        <div style="margin-top:2px">Models: <span class="value" id="modelCount">0</span></div>
+        <div style="margin-top:2px">Sel: <span class="value" id="selectedName">None</span></div>
+        <div style="margin-top:2px">Layers: <span class="value" id="layerCount">0</span></div>
+      </div>
+
+      <div class="viewer-actions">
+        <button id="btnLoadViewer" title="Load files">+ Load</button>
+      </div>
+
+      <div class="drop-overlay" id="dropZone">
+        <div class="drop-box">
+          <h3>Drop 3D files</h3>
+          <p>STL, OBJ, PLY</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar sidebar-right" style="width:240px;min-width:240px">
+      <div class="sidebar-header">Layer Preview</div>
+      <div class="sidebar-scroll">
+        <div class="section">
+          <div class="field">
+            <label>Layer</label>
+            <div class="slider-row">
+              <input type="range" id="layerSlider" min="0" max="0" value="0" step="1">
+              <span class="slider-val" id="layerLabel">0/0</span>
+            </div>
+          </div>
+          <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Viewer -->
-  <div class="viewer">
-    <div id="viewer3d"></div>
-
-    <div class="viewer-toolbar">
-      <button id="viewTop" title="Top view">Top</button>
-      <button id="viewFront" title="Front view">Front</button>
-      <button id="viewSide" title="Side view">Side</button>
-      <button id="viewIso" title="Isometric" class="active">Iso</button>
-      <button id="toggleGrid" class="active">Grid</button>
-      <button id="toggleAxes" class="active">Axes</button>
-      <button id="toggleWireframe">Wire</button>
-      <button id="centerModel">Center</button>
-    </div>
-
-    <div class="viewer-info">
-      <div>Build Volume: <span class="value">1000 x 1000 x 1000 mm</span></div>
-      <div style="margin-top:3px">Models: <span class="value" id="modelCount">0</span></div>
-      <div style="margin-top:3px">Selected: <span class="value" id="selectedName">None</span></div>
-      <div style="margin-top:3px">Layers: <span class="value" id="layerCount">0</span></div>
-    </div>
-
-    <div class="drop-overlay" id="dropZone">
-      <div class="drop-box">
-        <h3>Drop 3D files here</h3>
-        <p>STL, OBJ, PLY supported</p>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <span>FERROWORKER Slicer</span>
-      <span id="statusText">Ready</span>
-    </div>
-  </div>
-
-  <!-- Right Panel -->
-  <div class="panel panel-right">
-    <div class="panel-header">
-      <h1>Layer Preview</h1>
-    </div>
-    <div class="panel-scroll">
-      <div class="section">
-        <div class="field">
-          <label>Layer</label>
-          <div class="slider-row">
-            <input type="range" id="layerSlider" min="0" max="0" value="0" step="1">
-            <span class="slider-val" id="layerLabel">0/0</span>
-          </div>
-        </div>
-        <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
-      </div>
-    </div>
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span>FERROWORKER Slicer v1.0</span>
+    <span><span class="status-mode" id="statusMode">FDM</span> <span class="status-text" id="statusText">Ready</span></span>
   </div>
 </div>
 
