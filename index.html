@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERROWORKER | Advanced 3D Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <!-- Top Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-logo">FERROWORKER</div>
+    <button class="menu-item" data-action="file">File</button>
+    <button class="menu-item" data-action="edit">Edit</button>
+    <button class="menu-item" data-action="add">Add</button>
+    <button class="menu-item" data-action="object">Object</button>
+    <button class="menu-item" data-action="view">View</button>
+    <button class="menu-item" data-action="render">Render</button>
+    <button class="menu-item" data-action="window">Window</button>
+    <button class="menu-item" data-action="help">Help</button>
+    <div class="menu-spacer"></div>
+    <div class="workspace-tabs" style="position:static;transform:none;background:transparent;border:none;padding:0;backdrop-filter:none">
+      <button class="workspace-tab active" data-workspace="layout">Layout</button>
+      <button class="workspace-tab" data-workspace="modeling">Modeling</button>
+      <button class="workspace-tab" data-workspace="sculpt">Sculpt</button>
+      <button class="workspace-tab" data-workspace="uv">UV Editing</button>
+      <button class="workspace-tab" data-workspace="texture">Texture Paint</button>
+      <button class="workspace-tab" data-workspace="shader">Shading</button>
+      <button class="workspace-tab" data-workspace="animation">Animation</button>
+      <button class="workspace-tab" data-workspace="scripting">Scripting</button>
+    </div>
+    <div class="menu-spacer"></div>
+    <span class="menu-mode fdm" id="modeBadge">3D PRINT</span>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Left Tool Shelf -->
+    <div class="tool-shelf sidebar" id="toolShelf" style="width:44px;min-width:44px">
+      <button class="tool-btn active" id="toolSelect" data-tool="select" title="Select (V)">
+        <svg viewBox="0 0 24 24"><path d="M4 4l7 18 3-8 8-3z"/></svg>
+      </button>
+      <button class="tool-btn" id="toolBoxSelect" data-tool="box_select" title="Box Select (B)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolLasso" data-tool="lasso" title="Lasso Select (L)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolCircleSelect" data-tool="circle_select" title="Circle Select (C)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolMove" data-tool="move" title="Move (G)">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolRotate" data-tool="rotate" title="Rotate (R)">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolScale" data-tool="scale" title="Scale (S)">
+        <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolCursor" data-tool="cursor" title="3D Cursor (Shift+S)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="tool-btn" id="toolMeasure" data-tool="measure" title="Measure (M)">
+        <svg viewBox="0 0 24 24"><path d="M2 12h20M6 8v8M18 8v8M12 6v12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolExtrude" data-tool="extrude" title="Extrude (E)">
+        <svg viewBox="0 0 24 24"><path d="M12 2v8M8 6l4-4 4 4M4 14h16v6H4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="tool-btn" id="toolBevel" data-tool="bevel" title="Bevel (Ctrl+B)">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h8v8H8z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="tool-btn" id="toolLoopCut" data-tool="loop_cut" title="Loop Cut (Ctrl+R)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v18" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="tool-btn" id="toolKnife" data-tool="knife" title="Knife (K)">
+        <svg viewBox="0 0 24 24"><path d="M3 12h18M12 3l9 9-9 9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+    </div>
+
+    <!-- Outliner -->
+    <div class="sidebar" id="outliner" style="width:240px;min-width:240px">
+      <div class="sidebar-header">
+        <span>Outliner</span>
+        <div style="display:flex;gap:2px">
+          <button class="icon small" id="btnOutlinerAdd" title="Add Object">+</button>
+          <button class="icon small" id="btnOutlinerFilter" title="Filter">🔍</button>
+        </div>
+      </div>
+      <div class="sidebar-scroll outliner" id="outlinerList"></div>
+    </div>
+
+    <!-- Main Viewer -->
+    <div class="viewer" id="viewerMain">
+      <div id="viewer3d"></div>
+
+      <!-- Gizmos -->
+      <div class="gizmo-container" id="gizmoContainer" style="display:none">
+        <div class="gizmo-axis gizmo-x" data-axis="x"></div>
+        <div class="gizmo-axis gizmo-y" data-axis="y"></div>
+        <div class="gizmo-axis gizmo-z" data-axis="z"></div>
+      </div>
+
+      <!-- Top Toolbar -->
+      <div class="viewer-toolbar" id="viewerToolbar">
+        <button id="viewTop" title="Top (Numpad 7)">Top</button>
+        <button id="viewFront" title="Front (Numpad 1)">Front</button>
+        <button id="viewSide" title="Side (Numpad 3)">Side</button>
+        <button id="viewIso" title="Isometric (Numpad 5)" class="active">Iso</button>
+        <div style="width:1px;background:var(--border);margin:0 3px"></div>
+        <button id="toggleGrid" class="active" title="Toggle Grid">Grid</button>
+        <button id="toggleAxes" class="active" title="Toggle Axes">Axes</button>
+        <button id="toggleWireframe" title="Wireframe">Wire</button>
+        <button id="toggleOrtho" title="Toggle Orthographic/Perspective">Ortho</button>
+        <div style="width:1px;background:var(--border);margin:0 3px"></div>
+        <button id="toggleXray" title="X-Ray Mode">X-Ray</button>
+        <button id="toggleOutline" title="Outline Selected">Outline</button>
+        <button id="centerModel" title="Center View (C)">Center</button>
+      </div>
+
+      <!-- Viewer Info Overlay -->
+      <div class="viewer-info" id="viewerInfo">
+        <div>Verts: <span class="value" id="vertCount">0</span></div>
+        <div>Edges: <span class="value" id="edgeCount">0</span></div>
+        <div>Faces: <span class="value" id="faceCount">0</span></div>
+        <div>Tris: <span class="value" id="triCount">0</span></div>
+        <div style="margin-top:3px;color:var(--accent)">Sel: <span class="value" id="selectedName">None</span></div>
+        <div>Mode: <span class="value" id="selMode">Object</span></div>
+      </div>
+
+      <!-- Viewport Navigation (Gizmo) -->
+      <div class="viewport-gizmo" id="viewportGizmo">
+        <div class="viewport-gizmo-axis" data-view="top" style="--axis-color:#4a9eff">Y+</div>
+        <div class="viewport-gizmo-axis" data-view="front" style="--axis-color:#ff4a4a">Z+</div>
+        <div class="viewport-gizmo-axis" data-view="side" style="--axis-color:#4aff4a">X+</div>
+      </div>
+
+      <!-- Drop Zone -->
+      <div class="drop-overlay" id="dropZone">
+        <div class="drop-box">
+          <h3>Drop 3D Files</h3>
+          <p>STL, OBJ, PLY, 3MF supported</p>
+        </div>
+      </div>
+
+      <!-- Progress Overlay -->
+      <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-percent" id="progressPercent">0%</div>
+        <div class="progress-text" id="progressText">Slicing...</div>
+        <div class="progress" id="progress" style="width:300px;height:6px"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Right Properties Panel -->
+    <div class="sidebar sidebar-right" id="propertiesPanel" style="width:300px;min-width:300px">
+      <div class="right-tabs">
+        <button class="right-tab active" data-ptab="transform">Transform</button>
+        <button class="right-tab" data-ptab="material">Material</button>
+        <button class="right-tab" data-ptab="modifiers">Modifiers</button>
+        <button class="right-tab" data-ptab="data">Data</button>
+      </div>
+      <div class="sidebar-scroll properties-content">
+        <!-- Transform -->
+        <div class="tab-panel active" id="ptab-transform">
+          <div class="prop-section">
+            <div class="prop-section-title">Location</div>
+            <div class="prop-row"><span class="prop-label">X</span><input type="number" class="prop-input" id="locX" value="0" step="0.1"></div>
+            <div class="prop-row"><span class="prop-label">Y</span><input type="number" class="prop-input" id="locY" value="0" step="0.1"></div>
+            <div class="prop-row"><span class="prop-label">Z</span><input type="number" class="prop-input" id="locZ" value="0" step="0.1"></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Rotation (Euler)</div>
+            <div class="prop-row"><span class="prop-label">X</span><input type="number" class="prop-input" id="rotX" value="0" step="1"></div>
+            <div class="prop-row"><span class="prop-label">Y</span><input type="number" class="prop-input" id="rotY" value="0" step="1"></div>
+            <div class="prop-row"><span class="prop-label">Z</span><input type="number" class="prop-input" id="rotZ" value="0" step="1"></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Scale</div>
+            <div class="prop-row"><span class="prop-label">X</span><input type="number" class="prop-input" id="scaleX" value="1" step="0.01"></div>
+            <div class="prop-row"><span class="prop-label">Y</span><input type="number" class="prop-input" id="scaleY" value="1" step="0.01"></div>
+            <div class="prop-row"><span class="prop-label">Z</span><input type="number" class="prop-input" id="scaleZ" value="1" step="0.01"></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Dimensions</div>
+            <div class="prop-row"><span class="prop-label">X</span><input type="number" class="prop-input" id="dimX" value="0" step="0.1" disabled></div>
+            <div class="prop-row"><span class="prop-label">Y</span><input type="number" class="prop-input" id="dimY" value="0" step="0.1" disabled></div>
+            <div class="prop-row"><span class="prop-label">Z</span><input type="number" class="prop-input" id="dimZ" value="0" step="0.1" disabled></div>
+          </div>
+        </div>
+        <!-- Material -->
+        <div class="tab-panel" id="ptab-material">
+          <div class="prop-section">
+            <div class="prop-section-title">Surface</div>
+            <div class="prop-row"><span class="prop-label">Color</span><input type="color" class="prop-input" id="matColor" value="#4a9eff"></div>
+            <div class="field" style="margin-top:6px"><label>Metallic</label><div class="slider-row"><input type="range" id="matMetallic" min="0" max="100" value="0"><span class="slider-val" id="matMetallicVal">0%</span></div></div>
+            <div class="field" style="margin-top:6px"><label>Roughness</label><div class="slider-row"><input type="range" id="matRoughness" min="0" max="100" value="50"><span class="slider-val" id="matRoughnessVal">50%</span></div></div>
+            <div class="field" style="margin-top:6px"><label>Alpha</label><div class="slider-row"><input type="range" id="matAlpha" min="0" max="100" value="100"><span class="slider-val" id="matAlphaVal">100%</span></div></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Shading</div>
+            <div class="field"><label>Mode</label>
+              <select id="shadeMode">
+                <option value="solid">Solid</option>
+                <option value="material">Material Preview</option>
+                <option value="rendered">Rendered</option>
+                <option value="wireframe">Wireframe</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:6px"><label>Backface Culling</label><button class="toggle" id="btnBackface">Off</button></div>
+            <div class="field" style="margin-top:6px"><label>X-Ray</label><button class="toggle" id="btnXray">Off</button></div>
+          </div>
+        </div>
+        <!-- Modifiers -->
+        <div class="tab-panel" id="ptab-modifiers">
+          <div class="prop-section">
+            <div class="prop-section-title">Modifiers</div>
+            <div id="modifierList" style="display:flex;flex-direction:column;gap:4px"></div>
+            <button id="btnAddModifier" class="small" style="width:100%;margin-top:6px">+ Add Modifier</button>
+          </div>
+        </div>
+        <!-- Data -->
+        <div class="tab-panel" id="ptab-data">
+          <div class="prop-section">
+            <div class="prop-section-title">Object Data</div>
+            <div class="field"><label>Name</label><input type="text" id="objName" value="Object"></div>
+            <div class="field" style="margin-top:6px"><label>Display As</label>
+              <select id="displayAs">
+                <option value="bounds">Bounds</option>
+                <option value="wire">Wire</option>
+                <option value="solid">Solid</option>
+                <option value="textured">Textured</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:6px"><label>Show In Front</label><button class="toggle" id="btnShowFront">Off</button></div>
+            <div class="field" style="margin-top:6px"><label>Selectable</label><button class="toggle active" id="btnSelectable">On</button></div>
+            <div class="field" style="margin-top:6px"><label>Renderable</label><button class="toggle active" id="btnRenderable">On</button></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Relations</div>
+            <div class="field"><label>Parent</label><select id="parentSelect"><option value="">None</option></select></div>
+            <div class="field" style="margin-top:6px"><label>Collection</label><select id="collectionSelect"><option value="">Scene Collection</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline" id="timeline">
+    <div class="timeline-header">
+      <span style="font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em">Timeline</span>
+      <div style="display:flex;gap:3px;margin-left:auto">
+        <button class="icon small" id="btnJumpStart" title="Jump to Start">⏮</button>
+        <button class="icon small" id="btnPrevFrame" title="Previous Frame">◀</button>
+        <button class="icon small" id="btnPlay" title="Play/Pause">▶</button>
+        <button class="icon small" id="btnNextFrame" title="Next Frame">▶</button>
+        <button class="icon small" id="btnJumpEnd" title="Jump to End">⏭</button>
+      </div>
+      <span style="margin-left:8px;font-size:10px;color:var(--text-dim)">Frame: <span id="currentFrame" style="color:var(--text)">1</span> / <span id="totalFrames">250</span></span>
+      <span style="margin-left:8px;font-size:10px;color:var(--text-dim)">FPS: <input type="number" id="fpsInput" value="24" min="1" max="120" style="width:50px;padding:2px 4px;font-size:10px"></span>
+    </div>
+    <div class="timeline-body" id="timelineBody">
+      <div class="timeline-track" id="timelineTrack" style="width:2500px">
+        <div class="timeline-playhead" id="timelinePlayhead" style="left:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span>FERROWORKER <span class="mode-badge">ADVANCED</span> v2.0</span>
+      <span style="color:var(--border)">|</span>
+      <span>Verts: <span class="status-text" id="statusVerts">0</span></span>
+      <span>Edges: <span class="status-text" id="statusEdges">0</span></span>
+      <span>Faces: <span class="status-text" id="statusFaces">0</span></span>
+      <span>Tris: <span class="status-text" id="statusTris">0</span></span>
+      <span style="color:var(--border)">|</span>
+      <span>Memory: <span class="status-text" id="statusMemory">0 MB</span></span>
+      <span>FPS: <span class="status-text" id="statusFPS">60</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="status-mode" id="statusMode">OBJECT MODE</span>
+      <span class="status-text" id="statusText">Ready</span>
+      <span style="color:var(--border)">|</span>
+      <span>Tool: <span class="status-text" id="statusTool">Select</span></span>
+      <span style="color:var(--border)">|</span>
+      <span id="statusPivot">Pivot: Median Point</span>
+      <span style="color:var(--border)">|</span>
+      <span id="statusSnapping">Snap: Off</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="context-menu" id="contextMenu" style="display:none"></div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script type="module">
+import { initApp } from './js/app.js';
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>

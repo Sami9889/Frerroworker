@@ -501,4 +501,151 @@ input[type=range].ticks {
 .workspace-tab.active { background: var(--accent); color: #000; font-weight: 500; }
 .workspace-tab:hover:not(.active) { color: var(--text); background: var(--bg-hover); }
 
+/* Gizmos */
+.gizmo-container {
+  position: absolute; bottom: 20px; right: 20px;
+  width: 80px; height: 80px; z-index: 20;
+}
+.gizmo-axis {
+  position: absolute; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; cursor: pointer;
+  border-radius: var(--radius); border: 1px solid transparent;
+  transition: all var(--transition);
+}
+.gizmo-axis:hover { border-color: var(--text-bright); transform: scale(1.1); }
+.gizmo-x { background: rgba(255,0,0,0.2); color: #ff5555; top: 0; left: 50%; transform: translateX(-50%); }
+.gizmo-y { background: rgba(0,255,0,0.2); color: #55ff55; bottom: 0; left: 50%; transform: translateX(-50%); }
+.gizmo-z { background: rgba(0,0,255,0.2); color: #4a9eff; top: 50%; right: 0; transform: translateY(-50%); }
+
+/* Viewport Gizmo (Navigation) */
+.viewport-gizmo {
+  position: absolute; bottom: 20px; left: 20px;
+  width: 60px; height: 60px; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+}
+.viewport-gizmo-axis {
+  position: absolute; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 600; cursor: pointer;
+  border-radius: var(--radius); color: var(--axis-color, #fff);
+  background: rgba(38, 38, 38, 0.8); border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.viewport-gizmo-axis:hover { background: var(--axis-color); color: #000; }
+
+/* Tool Shelf */
+.tool-shelf { display: flex; flex-direction: column; gap: 2px; padding: 4px; background: var(--bg-base); }
+.tool-shelf .separator { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Timeline */
+.timeline {
+  height: 60px; background: var(--bg-panel); border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.timeline-header {
+  height: 20px; background: var(--bg-header); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 6px;
+}
+.timeline-body {
+  flex: 1; position: relative; overflow-x: auto; overflow-y: hidden;
+}
+.timeline-track {
+  height: 100%; position: relative; background: var(--bg-base);
+  border-top: 1px solid var(--border);
+}
+.timeline-frame {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--border); pointer-events: none;
+}
+.timeline-playhead {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--accent); pointer-events: none; z-index: 5;
+}
+
+/* Workspace Tabs in Menu */
+.menu-bar .workspace-tabs {
+  position: static; transform: none; background: transparent;
+  padding: 0; border: none; backdrop-filter: none;
+}
+.menu-bar .workspace-tab {
+  padding: 3px 8px; font-size: 9px;
+}
+.menu-bar .workspace-tab.active { background: var(--accent); color: #000; }
+.menu-bar .workspace-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text-bright); }
+
+/* Outliner */
+.outliner { background: var(--bg-base); }
+.outliner-item {
+  display: flex; align-items: center; gap: 4px; padding: 3px 4px;
+  font-size: 10px; cursor: pointer; border-radius: var(--radius);
+}
+.outliner-item:hover { background: var(--bg-hover); }
+.outliner-item.selected { background: rgba(255, 157, 0, 0.15); }
+.outliner-item .icon { width: 14px; height: 14px; color: var(--text-dim); }
+.outliner-item .name { flex: 1; }
+.outliner-children { padding-left: 12px; }
+
+/* Right Panel Tabs */
+.right-tabs {
+  display: flex; gap: 2px; padding: 4px; background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+}
+.right-tab {
+  flex: 1; padding: 5px; text-align: center; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
+  border: none; background: transparent; color: var(--text-dim);
+  border-radius: var(--radius); transition: all var(--transition);
+}
+.right-tab.active { background: var(--bg-input); color: var(--text-bright); font-weight: 500; }
+.right-tab:hover:not(.active) { color: var(--text); background: var(--bg-hover); }
+
+/* Properties Panel */
+.properties-content { padding: 0; }
+.prop-section {
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+.prop-section-title {
+  font-size: 10px; font-weight: 600; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+}
+.prop-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+}
+.prop-label {
+  font-size: 10px; color: var(--text-dim); min-width: 50px; text-transform: uppercase;
+}
+.prop-input { flex: 1; }
+
+/* Gizmo Active State */
+.gizmo-axis.active { border-color: var(--text-bright); transform: scale(1.2); }
+.gizmo-x.active { background: rgba(255,0,0,0.5); }
+.gizmo-y.active { background: rgba(0,255,0,0.5); }
+.gizmo-z.active { background: rgba(0,0,255,0.5); }
+
+/* Selection Mode Indicator */
+.selection-mode-indicator {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(38, 38, 38, 0.92); padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 10px; color: var(--text-dim); z-index: 20;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.modal-header { font-size: 14px; font-weight: 600; color: var(--text-bright); margin-bottom: 12px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px; }
+
+/* Status bar enhancements */
+.status-bar .status-text { color: var(--text); }
+.status-bar .status-mode { color: var(--accent); font-weight: 500; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
 </style>
