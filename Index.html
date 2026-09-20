@@ -403,57 +403,201 @@
       </div>
     </div>
 
-    <!-- Right Sidebar -->
-    <div class="sidebar sidebar-right" style="width:240px;min-width:240px">
-      <div class="sidebar-header">Layer Preview</div>
+    <!-- Right Sidebar - Advanced Tools -->
+    <div class="sidebar sidebar-right" style="width:260px;min-width:260px">
+      <div class="sidebar-header">Tools</div>
       <div class="sidebar-scroll">
-        <div class="section">
-          <div class="field">
-            <label>Layer</label>
-            <div class="slider-row">
-              <input type="range" id="layerSlider" min="0" max="0" value="0" step="1">
-              <span class="slider-val" id="layerLabel">0/0</span>
-            </div>
-          </div>
-          <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
+        <!-- Tab Navigation -->
+        <div class="right-tabs">
+          <button class="right-tab active" data-tab="layers">Layers</button>
+          <button class="right-tab" data-tab="stats">Stats</button>
+          <button class="right-tab" data-tab="gcode">G-code</button>
+          <button class="right-tab" data-tab="tools">Tools</button>
         </div>
 
-        <div class="section">
-          <div class="section-title" data-section="stats">Statistics</div>
-          <div class="section-content" id="statsContent">
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-label">Print Time</div>
-                <div class="stat-value" id="statTime">--</div>
+        <!-- Layers Tab -->
+        <div class="tab-panel active" id="tab-layers">
+          <div class="section">
+            <div class="field">
+              <label>Layer</label>
+              <div class="slider-row">
+                <input type="range" id="layerSlider" min="0" max="0" value="0" step="1">
+                <span class="slider-val" id="layerLabel">0/0</span>
               </div>
-              <div class="stat-item">
-                <div class="stat-label">Filament</div>
-                <div class="stat-value" id="statFilament">--</div>
+            </div>
+            <button id="btnShowLayer" disabled style="width:100%;margin-top:6px">Show Layer</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title" data-section="layerViz">Layer Visualizer</div>
+            <div class="section-content" id="layerVizContent">
+              <div class="field">
+                <label>Color Mode</label>
+                <select id="layerColorMode">
+                  <option value="single">Single Color</option>
+                  <option value="height">By Height</option>
+                  <option value="speed">By Speed</option>
+                  <option value="type">By Type</option>
+                </select>
               </div>
-              <div class="stat-item">
-                <div class="stat-label">Layers</div>
-                <div class="stat-value" id="statLayers">0</div>
+              <div class="field">
+                <label>Layer Opacity</label>
+                <div class="slider-row">
+                  <input type="range" id="layerOpacity" min="10" max="100" value="80" step="5">
+                  <span class="slider-val" id="layerOpacityVal">80%</span>
+                </div>
               </div>
-              <div class="stat-item">
-                <div class="stat-label">Triangles</div>
-                <div class="stat-value" id="statTris">0</div>
+              <div class="field">
+                <label>Line Width</label>
+                <div class="slider-row">
+                  <input type="range" id="layerLineWidth" min="1" max="5" value="2" step="0.5">
+                  <span class="slider-val" id="layerLineWidthVal">2</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title" data-section="gcodeInfo">G-code Info</div>
-          <div class="section-content" id="gcodeInfoContent">
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-label">Size</div>
-                <div class="stat-value" id="gcodeSize">--</div>
+        <!-- Stats Tab -->
+        <div class="tab-panel" id="tab-stats">
+          <div class="section">
+            <div class="section-title" data-section="printStats">Print Statistics</div>
+            <div class="section-content" id="printStatsContent">
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-label">Print Time</div>
+                  <div class="stat-value" id="statTime">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Filament</div>
+                  <div class="stat-value" id="statFilament">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Layers</div>
+                  <div class="stat-value" id="statLayers">0</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Triangles</div>
+                  <div class="stat-value" id="statTris">0</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Bounding Box</div>
+                  <div class="stat-value" id="statBBox">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Model Height</div>
+                  <div class="stat-value" id="statHeight">--</div>
+                </div>
               </div>
-              <div class="stat-item">
-                <div class="stat-label">Commands</div>
-                <div class="stat-value" id="gcodeCmds">--</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title" data-section="gcodeStats">G-code Statistics</div>
+            <div class="section-content" id="gcodeStatsContent">
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-label">File Size</div>
+                  <div class="stat-value" id="gcodeSize">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Commands</div>
+                  <div class="stat-value" id="gcodeCmds">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Est. Time</div>
+                  <div class="stat-value" id="gcodeTime">--</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Est. Weight</div>
+                  <div class="stat-value" id="gcodeWeight">--</div>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- G-code Tab -->
+        <div class="tab-panel" id="tab-gcode">
+          <div class="section">
+            <div class="section-title" data-section="gcodePreview">G-code Preview</div>
+            <div class="section-content" id="gcodePreviewContent">
+              <div class="gcode-preview" id="gcodePreview" style="display:none;max-height:300px"></div>
+              <div id="gcodeEmpty" style="text-align:center;padding:20px;color:var(--text-dim);font-size:10px">
+                Slice a model to preview G-code
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title" data-section="gcodeActions">Actions</div>
+            <div class="section-content" id="gcodeActionsContent">
+              <div style="display:flex;gap:4px;margin-bottom:6px">
+                <button id="btnDownload" disabled style="flex:1">Download</button>
+                <button id="btnCopyGcode" class="small" disabled>Copy</button>
+              </div>
+              <div class="field">
+                <label>Start G-code</label>
+                <textarea id="startGcode" rows="3" placeholder="Custom start G-code..."></textarea>
+              </div>
+              <div class="field">
+                <label>End G-code</label>
+                <textarea id="endGcode" rows="3" placeholder="Custom end G-code..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tools Tab -->
+        <div class="tab-panel" id="tab-tools">
+          <div class="section">
+            <div class="section-title" data-section="modelTools">Model Tools</div>
+            <div class="section-content" id="modelToolsContent">
+              <div class="tool-grid">
+                <button id="btnDuplicate" class="small">Duplicate</button>
+                <button id="btnArrange" class="small">Arrange</button>
+                <button id="btnCenterModel" class="small">Center</button>
+                <button id="btnResetTransform" class="small">Reset</button>
+                <button id="btnDeleteSelected" class="small danger">Delete</button>
+                <button id="btnClearAll" class="small danger">Clear All</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title" data-section="viewTools">View Tools</div>
+            <div class="section-content" id="viewToolsContent">
+              <div class="tool-grid">
+                <button id="viewTop">Top</button>
+                <button id="viewFront">Front</button>
+                <button id="viewSide">Side</button>
+                <button id="viewIso" class="active">Iso</button>
+                <button id="toggleGrid" class="active">Grid</button>
+                <button id="toggleAxes" class="active">Axes</button>
+                <button id="toggleWireframe">Wire</button>
+                <button id="toggleOrtho">Ortho</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title" data-section="settingsTools">Settings</div>
+            <div class="section-content" id="settingsToolsContent">
+              <div style="display:flex;gap:4px;margin-bottom:6px">
+                <button id="btnExportSettings" class="small" style="flex:1">Export</button>
+                <button id="btnImportSettings" class="small" style="flex:1">Import</button>
+              </div>
+              <div class="field">
+                <label>Preset</label>
+                <select id="presetSelect">
+                  <option value="custom">Custom</option>
+                  <option value="draft">Draft (0.3mm)</option>
+                  <option value="normal">Normal (0.2mm)</option>
+                  <option value="fine">Fine (0.1mm)</option>
+                  <option value="raft">Raft Mode</option>
+                </select>
+              </div>
+              <input type="file" id="settingsInput" accept=".json" style="display:none">
             </div>
           </div>
         </div>

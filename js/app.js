@@ -15,7 +15,8 @@ const STATE = {
   sliced: false,
   undoStack: [],
   redoStack: [],
-  contextTarget: null
+  contextTarget: null,
+  isOrtho: false
 };
 
 const MODE_COLORS = { fdm: 0xb8b8b8, laser: 0xb5451b, cnc: 0x858585 };
@@ -33,12 +34,17 @@ export function initApp() {
   setupCollapsibles();
   setupKeyboardShortcuts();
   setupContextMenu();
+  setupRightTabs();
   updateModelList();
 }
 
 function setupEventListeners() {
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => setMode(tab.dataset.mode));
+  });
+
+  document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', () => handleMenuAction(item.dataset.action));
   });
 
   document.getElementById('btnAddFiles').addEventListener('click', () => document.getElementById('fileInput').click());
@@ -66,6 +72,14 @@ function setupEventListeners() {
 
   document.getElementById('btnDuplicate').addEventListener('click', duplicateSelected);
   document.getElementById('btnArrange').addEventListener('click', arrangeModels);
+  document.getElementById('btnCenterModel').addEventListener('click', centerSelected);
+  document.getElementById('btnResetTransform').addEventListener('click', resetTransform);
+  document.getElementById('btnDeleteSelected').addEventListener('click', deleteSelected);
+  document.getElementById('btnCopyGcode').addEventListener('click', copyGcodeToClipboard);
+  document.getElementById('btnExportSettings').addEventListener('click', exportSettings);
+  document.getElementById('btnImportSettings').addEventListener('click', () => document.getElementById('settingsInput').click());
+  document.getElementById('settingsInput').addEventListener('change', importSettings);
+  document.getElementById('presetSelect').addEventListener('change', applyPreset);
 
   document.getElementById('viewTop').addEventListener('click', () => navigateCamera([0, 500, 0.01], [0, 0, 0]));
   document.getElementById('viewFront').addEventListener('click', () => navigateCamera([0, 0, 500], [0, 0, 0]));
@@ -74,9 +88,47 @@ function setupEventListeners() {
   document.getElementById('toggleGrid').addEventListener('click', function() { getGrid().visible = !getGrid().visible; this.classList.toggle('active'); });
   document.getElementById('toggleAxes').addEventListener('click', function() { getAxes().visible = !getAxes().visible; this.classList.toggle('active'); });
   document.getElementById('toggleWireframe').addEventListener('click', toggleWireframe);
-  document.getElementById('centerModel').addEventListener('click', centerSelected);
+  document.getElementById('toggleOrtho').addEventListener('click', toggleOrtho);
+
+  document.getElementById('layerOpacity').addEventListener('input', e => {
+    document.getElementById('layerOpacityVal').textContent = e.target.value + '%';
+    updateLayerPreviewStyle();
+  });
+  document.getElementById('layerLineWidth').addEventListener('input', e => {
+    document.getElementById('layerLineWidthVal').textContent = e.target.value;
+    updateLayerPreviewStyle();
+  });
+  document.getElementById('layerColorMode').addEventListener('change', updateLayerPreviewStyle);
 
   setupViewerInteraction();
+}
+
+function handleMenuAction(action) {
+  switch(action) {
+    case 'file':
+      document.getElementById('fileInput').click();
+      break;
+    case 'edit':
+      undoTransform();
+      break;
+    case 'view':
+      fitView();
+      break;
+    case 'help':
+      showToast('FERROWORKER Slicer - Shortcuts: Ctrl+Z/Y/D/A/S, G/W/F/Esc', 'info');
+      break;
+  }
+}
+
+function setupRightTabs() {
+  document.querySelectorAll('.right-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.right-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
 }
 
 function setupCollapsibles() {
@@ -165,15 +217,24 @@ function fitView() {
 function toggleGrid() {
   const grid = getGrid();
   grid.visible = !grid.visible;
-  document.getElementById('toggleGrid').classList.toggle('active');
+  const btn = document.getElementById('toggleGrid');
+  if (btn) btn.classList.toggle('active');
 }
 
 function toggleWireframe() {
   const m = getSelected();
   if (m && m.mesh && m.mesh.material) {
     m.mesh.material.wireframe = !m.mesh.material.wireframe;
-    document.getElementById('toggleWireframe').classList.toggle('active');
+    const btn = document.getElementById('toggleWireframe');
+    if (btn) btn.classList.toggle('active');
   }
+}
+
+function toggleOrtho() {
+  STATE.isOrtho = !STATE.isOrtho;
+  const btn = document.getElementById('toggleOrtho');
+  if (btn) btn.classList.toggle('active');
+  showToast(STATE.isOrtho ? 'Orthographic mode' : 'Perspective mode', 'info');
 }
 
 function centerSelected() {
@@ -182,8 +243,21 @@ function centerSelected() {
   m.mesh.position.set(0, 0, 0);
   m.mesh.rotation.set(0, 0, 0);
   m.mesh.scale.set(1, 1, 1);
+  m.mesh.updateMatrixWorld(true);
   syncTransformUI(m);
   fitView();
+}
+
+function resetTransform() {
+  const m = getSelected();
+  if (!m) return;
+  saveUndoState();
+  m.mesh.position.set(0, 0, 0);
+  m.mesh.rotation.set(0, 0, 0);
+  m.mesh.scale.set(1, 1, 1);
+  m.mesh.updateMatrixWorld(true);
+  syncTransformUI(m);
+  showToast('Transform reset', 'info');
 }
 
 function setupViewerInteraction() {
@@ -439,8 +513,10 @@ function restoreState(state) {
 }
 
 function updateUndoRedoButtons() {
-  document.getElementById('btnUndo').disabled = !STATE.undoStack.length;
-  document.getElementById('btnRedo').disabled = !STATE.redoStack.length;
+  const undoBtn = document.getElementById('btnUndo');
+  const redoBtn = document.getElementById('btnRedo');
+  if (undoBtn) undoBtn.disabled = !STATE.undoStack.length;
+  if (redoBtn) redoBtn.disabled = !STATE.redoStack.length;
 }
 
 function applyTransform() {
@@ -475,6 +551,7 @@ function sliceCurrent() {
   showToast('Slice complete: ' + STATE.layers.length + ' layers, ' + totalContours + ' contours', 'success');
   updateInfo();
   updateStats();
+  updateLayerPreviewStyle();
 }
 
 function previewLayers() {
@@ -487,14 +564,32 @@ function showLayer(idx) {
   clearGroup(getPreviewGroup());
   if (idx < 0 || idx >= STATE.layers.length) return;
   const layer = STATE.layers[idx];
-  layer.polygons.forEach(poly => {
+  const colorMode = document.getElementById('layerColorMode')?.value || 'single';
+  layer.polygons.forEach((poly, polyIdx) => {
     if (poly.length < 2) return;
     const pts = poly.map(p => new THREE.Vector3(p.x, p.y, layer.z));
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineBasicMaterial({ color: 0xff9d00 });
+    let color = 0xff9d00;
+    if (colorMode === 'height') {
+      const t = STATE.layers.length > 1 ? idx / (STATE.layers.length - 1) : 0;
+      color = new THREE.Color().setHSL(0.6 - t * 0.6, 1, 0.5).getHex();
+    } else if (colorMode === 'speed') {
+      const colors = [0x00ff00, 0xffff00, 0xff0000];
+      color = colors[polyIdx % colors.length];
+    } else if (colorMode === 'type') {
+      const colors = [0xff9d00, 0x00aaff, 0xff00ff];
+      color = colors[polyIdx % colors.length];
+    }
+    const mat = new THREE.LineBasicMaterial({ color, linewidth: parseFloat(document.getElementById('layerLineWidth')?.value || 2) });
     getPreviewGroup().add(new THREE.Line(geom, mat));
   });
   document.getElementById('layerLabel').textContent = (idx + 1) + '/' + STATE.layers.length;
+}
+
+function updateLayerPreviewStyle() {
+  if (!STATE.sliced) return;
+  const idx = parseInt(document.getElementById('layerSlider').value);
+  if (idx >= 0 && idx < STATE.layers.length) showLayer(idx);
 }
 
 function showCurrentLayer() { showLayer(parseInt(document.getElementById('layerSlider').value)); }
@@ -516,8 +611,29 @@ function downloadGcode() {
   preview.style.display = 'block';
   preview.textContent = gcode.slice(0, 6000) + (gcode.length > 6000 ? '\n; ... truncated ...' : '');
 
+  const emptyMsg = document.getElementById('gcodeEmpty');
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  updateGcodeStats(gcode);
+}
+
+function copyGcodeToClipboard() {
+  const preview = document.getElementById('gcodePreview');
+  if (!preview.textContent) { showToast('No G-code to copy', 'warn'); return; }
+  navigator.clipboard.writeText(preview.textContent).then(() => showToast('G-code copied to clipboard', 'success'));
+}
+
+function updateGcodeStats(gcode) {
   document.getElementById('gcodeSize').textContent = (gcode.length / 1024).toFixed(1) + ' KB';
   document.getElementById('gcodeCmds').textContent = gcode.split('\n').length.toLocaleString();
+
+  const s = readSettings();
+  const estMinutes = estimatePrintTime(STATE.layers, s);
+  document.getElementById('gcodeTime').textContent = formatTime(estMinutes);
+
+  const filament = estimateFilament(STATE.layers, s);
+  const weight = (filament * 1.24 / 1000).toFixed(2);
+  document.getElementById('gcodeWeight').textContent = weight + ' g';
 }
 
 function readSettings() {
@@ -527,7 +643,7 @@ function readSettings() {
     infill: parseFloat(document.getElementById('infill').value) || 20,
     infillPattern: document.getElementById('infillPattern').value,
     infillAnchor: document.getElementById('infillAnchor').value,
-    printSpeed: parseFloat(document.getElementById('printSpeed').value) || 60,
+    printSpeed: parseFloat(document.getElementById('printSpeed')?.value) || 60,
     travelSpeed: parseFloat(document.getElementById('travelSpeed').value) || 120,
     nozzleTemp: parseFloat(document.getElementById('nozzleTemp').value) || 200,
     bedTemp: parseFloat(document.getElementById('bedTemp').value) || 60,
@@ -599,19 +715,52 @@ function updateStats() {
 
   const filament = estimateFilament(STATE.layers, s);
   document.getElementById('statFilament').textContent = filament.toFixed(1) + ' m';
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  STATE.models.forEach(m => {
+    if (!m.mesh) return;
+    const box = new THREE.Box3().setFromObject(m.mesh);
+    if (box.min.x < minX) minX = box.min.x;
+    if (box.max.x > maxX) maxX = box.max.x;
+    if (box.min.y < minY) minY = box.min.y;
+    if (box.max.y > maxY) maxY = box.max.y;
+    if (box.min.z < minZ) minZ = box.min.z;
+    if (box.max.z > maxZ) maxZ = box.max.z;
+  });
+  if (isFinite(minX)) {
+    const w = (maxX - minX).toFixed(1);
+    const d = (maxY - minY).toFixed(1);
+    const h = (maxZ - minZ).toFixed(1);
+    document.getElementById('statBBox').textContent = w + '×' + d + '×' + h + ' mm';
+    document.getElementById('statHeight').textContent = h + ' mm';
+  }
 }
 
 function estimatePrintTime(layers, s) {
   let totalTime = 0;
-  layers.forEach(layer => {
-    layer.polygons.forEach(poly => {
+  const speedOuter = parseFloat(document.getElementById('speedOuter')?.value) || s.printSpeed;
+  const speedInner = parseFloat(document.getElementById('speedInner')?.value) || s.printSpeed;
+  const speedInfill = parseFloat(document.getElementById('speedInfill')?.value) || s.printSpeed;
+  const speedTop = parseFloat(document.getElementById('speedTop')?.value) || s.printSpeed;
+  const speedFirst = parseFloat(document.getElementById('speedFirst')?.value) || s.printSpeed;
+
+  layers.forEach((layer, lIdx) => {
+    const isFirst = lIdx === 0;
+    layer.polygons.forEach((poly, pIdx) => {
+      const isPerimeter = pIdx === 0;
+      const isTopBottom = false;
+      let speed = s.printSpeed;
+      if (isFirst) speed = speedFirst;
+      else if (isPerimeter) speed = speedOuter;
+      else speed = speedInfill;
+
       for (let i = 0; i < poly.length - 1; i++) {
         const dist = Math.sqrt((poly[i+1].x - poly[i].x) ** 2 + (poly[i+1].y - poly[i].y) ** 2);
-        totalTime += (dist / s.printSpeed) / 60;
+        totalTime += (dist / speed) / 60;
       }
     });
   });
-  return Math.round(totalTime);
+  return Math.max(1, Math.round(totalTime));
 }
 
 function estimateFilament(layers, s) {
@@ -635,19 +784,38 @@ function formatTime(minutes) {
 }
 
 function enableActions() {
-  ['btnSlice', 'btnPreview', 'btnDownload'].forEach(id => document.getElementById(id).disabled = false);
+  ['btnSlice', 'btnPreview', 'btnDownload'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = false;
+  });
+  const copyBtn = document.getElementById('btnCopyGcode');
+  if (copyBtn) copyBtn.disabled = false;
 }
+
 function disableActions() {
-  ['btnSlice', 'btnPreview', 'btnDownload', 'btnShowLayer'].forEach(id => document.getElementById(id).disabled = true);
+  ['btnSlice', 'btnPreview', 'btnDownload', 'btnShowLayer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+  const copyBtn = document.getElementById('btnCopyGcode');
+  if (copyBtn) copyBtn.disabled = true;
 }
+
 function clearPreview() {
   clearGroup(getPreviewGroup());
   STATE.layers = [];
   STATE.sliced = false;
-  document.getElementById('layerSlider').max = 0;
-  document.getElementById('layerSlider').value = 0;
-  document.getElementById('layerLabel').textContent = '0/0';
-  document.getElementById('gcodePreview').style.display = 'none';
+  const slider = document.getElementById('layerSlider');
+  if (slider) {
+    slider.max = 0;
+    slider.value = 0;
+  }
+  const layerLabel = document.getElementById('layerLabel');
+  if (layerLabel) layerLabel.textContent = '0/0';
+  const gcodePreview = document.getElementById('gcodePreview');
+  if (gcodePreview) gcodePreview.style.display = 'none';
+  const gcodeEmpty = document.getElementById('gcodeEmpty');
+  if (gcodeEmpty) gcodeEmpty.style.display = 'block';
   updateInfo();
 }
 
@@ -690,4 +858,59 @@ function setProgress(pct) {
   } else {
     overlay.classList.add('active');
   }
+}
+
+function exportSettings() {
+  const settings = readSettings();
+  const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ferroworker_settings.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Settings exported', 'success');
+}
+
+function importSettings(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const settings = JSON.parse(ev.target.result);
+      Object.keys(settings).forEach(key => {
+        const el = document.getElementById(key);
+        if (el && el.value !== undefined) el.value = settings[key];
+      });
+      showToast('Settings imported', 'success');
+    } catch (err) {
+      showToast('Invalid settings file', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function applyPreset() {
+  const preset = document.getElementById('presetSelect').value;
+  const presets = {
+    draft: { layerHeight: 0.3, lineWidth: 0.4, infill: 10, infillPattern: 'lines', perimeters: 1, bottomLayers: 2, topLayers: 2, printSpeed: 80, travelSpeed: 150 },
+    normal: { layerHeight: 0.2, lineWidth: 0.4, infill: 20, infillPattern: 'grid', perimeters: 2, bottomLayers: 3, topLayers: 3, printSpeed: 60, travelSpeed: 120 },
+    fine: { layerHeight: 0.1, lineWidth: 0.4, infill: 15, infillPattern: 'gyroid', perimeters: 3, bottomLayers: 4, topLayers: 4, printSpeed: 40, travelSpeed: 100 },
+    raft: { layerHeight: 0.2, lineWidth: 0.4, infill: 20, infillPattern: 'grid', perimeters: 2, bottomLayers: 3, topLayers: 3, adhesionType: 'raft', supportMode: 'everywhere' }
+  };
+
+  if (preset === 'custom') return;
+  const p = presets[preset];
+  if (!p) return;
+
+  Object.keys(p).forEach(key => {
+    const el = document.getElementById(key);
+    if (el && el.value !== undefined) el.value = p[key];
+  });
+
+  const infillVal = document.getElementById('infillVal');
+  if (infillVal && p.infill !== undefined) infillVal.textContent = p.infill + '%';
+
+  showToast('Preset applied: ' + preset, 'success');
 }
